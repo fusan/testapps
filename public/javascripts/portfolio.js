@@ -89,7 +89,7 @@ function generate(tickers) {
     start(tickers,card_datas);
 
     //get starting only
-    //visualize();
+    //btc_ratio();
 
   });
 
@@ -101,8 +101,7 @@ function start(tss,card_datas) {
 
   //get poloniex api
   function poloniex(tss,card_datas) {
-    console.log('get poloniex');
-
+    //console.log('get poloniex');
     var ticker = $.get('https://poloniex.com/public?command=returnTicker');
 
     ticker.done(function(data) { update(data, tss, card_datas); });
@@ -143,7 +142,7 @@ function update(data,tss,card_datas) {
 
   if(i === n) display_total_volume(total_balance);
   if(i === n) set_to_localStorage('d3_data',JSON.stringify(portfolios));
-  if(i === n) visualize(); //update by tick
+  if(i === n) btc_ratio(); //update by tick
 
   function process_data(ts) {
 
@@ -195,7 +194,7 @@ Bitflyer.prototype.start = function start() {
     channel: "lightning_ticker_BTC_JPY",
     message: function(data) {
       base = `${data.best_bid}`;
-      console.log('get bitflyer');
+      //console.log('get bitflyer');
     }
    });
 
@@ -220,6 +219,11 @@ function Card(ts,balance) {
       port.id = this.ts;
       port.classList.add('card');
 
+  /*
+  var port2 = document.createElement('div')
+      port2.id = `${this.ts}_back`;
+      port2.classList.add('card_back');
+    */
   var tick = document.createElement('div');
       tick.id = `_${this.ts}`;
       tick.classList.add('ts');
@@ -248,6 +252,26 @@ function Card(ts,balance) {
   //new Tooltip(port,input);
 
 }
+
+function percent() {
+
+  var flag = true;
+  var cards = document.querySelectorAll('.card');
+
+  id('percent').addEventListener('click', rotate, false);
+
+  function rotate(flag) {
+
+    for(var i=0,n=cards.length;i<n;i++) {
+      cards[i].classList.toggle('card_rotate_right');
+      cards[i].classList.toggle('card_rotate_left');
+    }
+
+  }
+
+}
+
+percent();
 
 //display card data
 function input_data_to_card(ts,balance) {
@@ -279,25 +303,19 @@ function display_total_volume(balance) {
 
 }
 
-//visualize d3.js
-function visualize(e) {
+
+/* ---------- d3 visual ------------ */
+//btc_ratio d3.js
+function btc_ratio(e) {
   //console.log(JSON.parse(get('d3_data')));
   var json = JSON.parse(get('d3_data'));
   var total_balance = 0;
 
-  id('list').innerHTML = '';
-
-  for(var key in json) {
-    //console.log(key,json[key].btc_balance );
-    total_balance += json[key].btc_balance * 1;
-
-  }
-
-  id('list').innerHTML += `<div><span class="key">TOTAL</span><span class="btc_balance">${total_balance.toFixed(2)}BTC</span></div>`;
+  for(var key in json) { total_balance += json[key].btc_balance * 1; }
 
   for(var key in json) {
 
-    id('list').innerHTML += `<div><span class="key">${key}</span><span class="btc_balance">${json[key].btc_balance.toFixed(2)}BTC</span><span class="per_btc">${(json[key].btc_balance/total_balance * 100).toFixed(2)}%</span></div>`;
+    id(key).style.background = `-webkit-linear-gradient(top, #fa4646 0%,#ffffff ${json[key].btc_balance/total_balance * 100}%)`
 
   }
 
@@ -307,39 +325,72 @@ function pie(json) {
 
   var data = create_data_for_d3(json);
 
-  var chart_width = 300, chart_height = 300;
+  var chart_width = 400, chart_height = 400;
   var ir = 50,or = 100;
   var color = d3.scale.category20();
 
   var arc = d3.svg.arc().innerRadius(ir).outerRadius(or);
   var pie = d3.layout.pie().value(function(d) { return d; });
 
+  var labelArc = d3.svg.arc()
+    .outerRadius(chart_width / 2 - 80)
+    .innerRadius(chart_width / 2 - 80);
 
-  var chart = d3.select('#chart')
-            .append('svg')
+  console.log(data);
+
+  var field = d3.select('#chart')
+          .append('svg')
             .attr({
               "width": chart_width,
               "height": chart_height
             })
+          .append('g')
+            .attr({
+              "transform": `translate(${chart_width / 2}, ${chart_height / 2})`
+            })
 
-  chart.selectAll('path').data(pie(data)).enter()
-        .append('path')
+  var chart = field.selectAll('path').data(pie(data[2])).enter()
+        .append('g');
+
+
+      chart.append('path')
         .attr({
-          "d": function(d) { return arc(d); },
-          "fill": function(d) { return color(d.data); },
-          "transform": `translate(${chart_width / 2}, ${chart_height / 2})`
+          "d": function(d) {
+            return arc(d);
+            console.log(d, arc(d));
+          },
+          "fill": function(d) { return color(d.data); }
         });
+
+      chart.append("text")
+          .attr("dy", "0.25em")
+          .attr("transform", function(d) { return `translate(${labelArc.centroid(d) + 80})`; })
+          .style({"text-anchor": "middle",
+                  'font-size': '8px'})
+          .text(function(d,i){ return`${data[0][i].substring(4)}`; });
 
   function create_data_for_d3(json) {
 
     var json = JSON.parse(json);
+    var ticks = [];
+    var balances = [];
+    var btc_balances = [];
     var jsons = [];
 
+    console.log(json);
+
     for(var key in json ) {
-      jsons.push(json[key]['btc_balance']);
+
+      ticks.push(key);
+      balances.push(json[key]['balance'])
+      btc_balances.push(json[key]['btc_balance']);
+
     }
-    //console.log(jsons);
+
+    jsons.push(ticks,balances,btc_balances);
+    console.log(jsons);
     return jsons;
+
   }
 
 }

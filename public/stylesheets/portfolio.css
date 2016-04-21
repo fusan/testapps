@@ -10,38 +10,29 @@ h1 {
 }
 
 #visualize {
-  float: left;
   padding: 1%;
   width: 100%;
   height: auto;
   border-top: 1px dotted rgb(235, 226, 226);
 }
 
-#cahrt {
-  float: left;
+#chart {
   width: auto;
   height: 100%;
   width: auto;
+  border: 1px dotted rgb(235, 226, 226);
 }
 
-#list {
-  float: left;
-  width: 30%;
-  height: 100%;
-}
-
-#init_impot {
+#init_port {
   float: left;
   padding: 1%;
   width: 100%;
   height: auto;
-  background: rgb(244, 244, 164);
-
+  background: rgb(254, 254, 244);
 }
 
 #total {
   margin: 0 2rem 0 0;
-  border-bottom: 1px dotted gray;
 }
 
 #BTC_JPY {
@@ -71,7 +62,20 @@ h1 {
   width: auto;
   height: auto;
   font-size: 1rem;
-  box-shadow: 0 0 1px green;
+  box-shadow: 0 0 1px gray;
+  transition: 1s ease-in-out 0;
+}
+
+.card_back {
+  
+}
+
+.card_rotate_right {
+  transform: rotateY(180deg);
+}
+
+.card_rotate_left {
+  transform: rotateY(-180deg);
 }
 
 .ts {
