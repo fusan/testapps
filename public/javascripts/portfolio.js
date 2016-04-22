@@ -219,11 +219,10 @@ function Card(ts,balance) {
       port.id = this.ts;
       port.classList.add('card');
 
-  /*
-  var port2 = document.createElement('div')
-      port2.id = `${this.ts}_back`;
-      port2.classList.add('card_back');
-    */
+  var slider = document.createElement('div');
+      slider.id = `slider_${this.ts}`;
+      slider.classList.add('slider');
+
   var tick = document.createElement('div');
       tick.id = `_${this.ts}`;
       tick.classList.add('ts');
@@ -242,6 +241,7 @@ function Card(ts,balance) {
   port.appendChild(tick);
   port.appendChild(result);
   port.appendChild(input);
+  port.appendChild(slider);
 
   input.addEventListener('change', function() {
     var self = this;
@@ -256,18 +256,24 @@ function Card(ts,balance) {
 function percent() {
 
   var flag = true;
-  var cards = document.querySelectorAll('.card');
+  var sliders = document.querySelectorAll('.slider');
 
-  id('percent').addEventListener('click', rotate, false);
+  id('percent').addEventListener('click', slide, false);
 
-  function rotate(flag) {
+  function slide() {
 
+    for(var i=0,n=sliders.length;i<n;i++) { sliders[i].classList.toggle('slider_in'); }
+
+  }
+
+  //rotate animation
+  //id('percent').addEventListener('click', rotate, false);
+  /*function rotate(flag) {
     for(var i=0,n=cards.length;i<n;i++) {
       cards[i].classList.toggle('card_rotate_right');
       cards[i].classList.toggle('card_rotate_left');
     }
-
-  }
+  }*/
 
 }
 
@@ -315,7 +321,8 @@ function btc_ratio(e) {
 
   for(var key in json) {
 
-    id(key).style.background = `-webkit-linear-gradient(top, #fa4646 0%,#ffffff ${json[key].btc_balance/total_balance * 100}%)`
+    id(key).style.background = `-webkit-linear-gradient(top, #fa4646 0%,#ffffff ${json[key].btc_balance/total_balance * 100}%)`;
+    id(`slider_${key}`).innerHTML = `<div class="slider_inner">${(json[key].btc_balance/total_balance * 100).toFixed(0)}%</div>`
 
   }
 

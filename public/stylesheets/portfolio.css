@@ -56,6 +56,7 @@ h1 {
 }
 
 .card {
+  position: relative;
   float:left;
   margin: 1%;
   padding: 1%;
@@ -67,7 +68,7 @@ h1 {
 }
 
 .card_back {
-  
+
 }
 
 .card_rotate_right {
@@ -76,6 +77,32 @@ h1 {
 
 .card_rotate_left {
   transform: rotateY(-180deg);
+}
+
+.slider {
+  overflow: hidden;
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 100%;
+  color: white;
+  /*background: rgba(0, 0, 0, 0.7);*/
+  transition: 0.2s ease 0;
+}
+
+.slider_inner {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 100%;
+  line-height: 2rem;
+  text-align: center;
+  color: white;
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.slider_in {
+  width: 2rem;
 }
 
 .ts {
