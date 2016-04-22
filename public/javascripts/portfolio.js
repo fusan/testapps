@@ -305,7 +305,7 @@ function display_total_volume(balance) {
 
   var jpy = (balance * base).toFixed(0);
 
-  id('total').innerHTML = `${balance.toFixed(2)}btc × ${base}円 = ${jpy}円`;
+  id('total').innerHTML = `${balance.toFixed(2)}BTC / ¥${jpy}`;
 
 }
 
@@ -321,7 +321,7 @@ function btc_ratio(e) {
 
   for(var key in json) {
 
-    id(key).style.background = `-webkit-linear-gradient(top, #fa4646 0%,#ffffff ${json[key].btc_balance/total_balance * 100}%)`;
+    id(key).style.background = `-webkit-linear-gradient(top, #04b1f1 0%,#ffffff ${json[key].btc_balance/total_balance * 100}%)`;
     id(`slider_${key}`).innerHTML = `<div class="slider_inner">${(json[key].btc_balance/total_balance * 100).toFixed(0)}%</div>`
 
   }

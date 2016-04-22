@@ -149,7 +149,24 @@ h1 {
   background: rgb(215, 214, 213);
 }
 
-@media screen and (min-width: 760px) {
+@media screen and (max-width: 760px) {
 
+  #init_port {
+    float: left;
+    padding: 0;
+    width: 100%;
+    height: auto;
+    background: rgb(254, 254, 244);
+  }
+
+  .card {
+    float: left;
+    margin: 0.5%;
+    padding: 0.5%;
+    width: 48%;
+    height: auto;
+    font-size: 1rem;
+
+  }
 
 }
