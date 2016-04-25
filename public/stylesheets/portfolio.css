@@ -2,33 +2,36 @@ h1 {
   padding: 0 1%;
 }
 
+body {
+  margin: 0;
+  padding: 0;
+}
+
 #controller {
+  padding: 0.5% 1%;
   width: 100%;
   height: 2rem;
-  padding: 0.5% 1%;
   border-bottom: 1px dotted rgb(235, 226, 226);
 }
 
 #visualize {
-  padding: 1%;
+  float: left;
   width: 100%;
   height: auto;
   border-top: 1px dotted rgb(235, 226, 226);
 }
 
 #chart {
-  width: auto;
-  height: 100%;
-  width: auto;
-  border: 1px dotted rgb(235, 226, 226);
+  float: left;
+  width: 100%;
+  height: auto;
 }
 
 #init_port {
+  overflow: scroll;
   float: left;
-  padding: 1%;
   width: 100%;
-  height: auto;
-  background: rgb(254, 254, 244);
+  height: 320px;
 }
 
 #total {
@@ -37,6 +40,38 @@ h1 {
 
 #BTC_JPY {
   display: none;
+}
+
+#modal {
+  transition: 0.5s ease 0;
+}
+
+#modal_inner {
+  overflow: scroll;
+  margin: 2.5% auto;
+  width: 90%;
+  height: 90%;
+  background: white;
+}
+
+#percent {
+  font-weight: bold;
+  color: gray;
+
+}
+
+#star {
+  color: white;
+  text-shadow: 0 0 2px red;
+}
+
+.modal {
+  position: absolute;
+  top:0;
+  height: 100%;
+  width: 100%;
+  background: rgba(17, 17, 17, 0.58);
+  transition: 0.5s ease 0;
 }
 
 .button {
@@ -55,6 +90,42 @@ h1 {
   color: red;
 }
 
+.star {
+  color: white;
+  text-shadow: 0 0 2px red;
+}
+
+.stared {
+  color: red;
+}
+
+.animate {
+  transition: 1s ease 0;
+  transform: rotateX(360deg);
+}
+
+.pickup_port {
+  float: left;
+  margin: 0.5% 0;
+  padding: 0;
+  width: 10%;
+  height: auto;
+  text-align: center;
+  box-shadow: 0 0 1px gray;
+}
+
+.pickup_port_name {
+  margin: 2px auto;
+  font-size: 1rem;
+  background: rgb(252, 252, 252);
+}
+
+.pickup_port_radio {
+  display: block;
+  margin: 2px auto;
+  padding: 0;
+}
+
 .card {
   position: relative;
   float:left;
@@ -65,18 +136,6 @@ h1 {
   font-size: 1rem;
   box-shadow: 0 0 1px gray;
   transition: 1s ease-in-out 0;
-}
-
-.card_back {
-
-}
-
-.card_rotate_right {
-  transform: rotateY(180deg);
-}
-
-.card_rotate_left {
-  transform: rotateY(-180deg);
 }
 
 .slider {
@@ -134,6 +193,7 @@ h1 {
   display: inline-block;
   padding: 0.1rem 0.2rem;
 }
+
 .key {
 
   width: 6rem;
@@ -167,6 +227,12 @@ h1 {
     height: auto;
     font-size: 1rem;
 
+  }
+
+  .pickup_port_name {
+    margin: 2px auto;
+    font-size: 0.7rem;
+    background: rgb(252, 252, 252);
   }
 
 }
