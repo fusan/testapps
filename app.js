@@ -7,7 +7,7 @@ var bodyParser = require('body-parser');
 
 var routes = require('./routes/index');
 var users = require('./routes/users');
-var portfolio = require('./routes/portfolio');
+var portfolio = require('./routes/Allocator');
 
 var app = express();
 

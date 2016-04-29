@@ -32,7 +32,6 @@ var port_init = function port_init() {
 
     });
 
-
   //JSONデータの整形とlocalStorageへの格納
   function generate(tss, data) {
 
@@ -42,7 +41,7 @@ var port_init = function port_init() {
 
     if(!localStorage.getItem('poloniex_port')) {
 
-      set_localStorage('poloniex_port', poloniex);
+      set('poloniex_port', poloniex);
 
       console.log(poloniex);
 
@@ -54,30 +53,45 @@ var port_init = function port_init() {
 
 (function star() {
 
-  var flag = true;
-  id('star').addEventListener('click', star, false);
 
-  function star() {
 
-    if(flag) {
-      generate(get('stars'));
-      star_style(this,flag);
-      flag = false;
-    } else {
-      generate();
-      star_style(this,flag);
-      flag = true;
-    }
+  var flag = false;
+  generate(flag);
+  id('star').addEventListener('click', stared, false);
+
+  function stared() {
+
+    flag ? flag = false : flag = true;
+
+    star_style(this,flag);  //style
+
+    generate(flag);  //select card
 
   }
 
   function star_style(dom, flag) {
+
     flag ? dom.style.color = 'red' : dom.style.color = 'white';
     flag ? dom.style.transform = 'rotateY(360deg)' : dom.style.transform = '';
+
   }
 
 }());
 
+//to localStorage
+function set(ts, balance) {
+
+  localStorage.setItem(ts, JSON.stringify(balance));
+
+}
+
+//from localStorage
+function get(ts) {
+
+  var balance = localStorage.getItem(ts);
+      return JSON.parse(balance);
+
+}
 
 //open modal
 //id('plus').addEventListener('click', open, false);
@@ -85,8 +99,7 @@ var port_init = function port_init() {
 //id('modal').addEventListener('click', close, false);
 //modal_inner stopPropagation
 //id('modal_inner').addEventListener('click', function(e) { e.stopPropagation();}, false);
-//remove portfolio
-//id('remove').addEventListener('click', remove, false);
+
 
 /* ------------------------  model --------------------------- */
 /*
@@ -136,7 +149,7 @@ function Modal_inner_head() {
 
     for(var i = 0, n = data.length; i < n; i++) { if(data[i].checked === true) checked_ports.push(data[i].id.split('pickup_')[1]); }
 
-    if(i === n) set_localStorage('my_port', JSON.stringify(checked_ports)); //console.log(checked_ports);
+    if(i === n) set('my_port', JSON.stringify(checked_ports)); //console.log(checked_ports);
 
     close(e);
 
@@ -185,43 +198,29 @@ function add(e) {
 
       console.log(json);
 
-  set_localStorage('like',json);
+  set('like',json);
 
 };
-
-//remove histrory
-//function remove() { console.log('removeItem'); };
-
 */
-
-//to localStorage
-function set_localStorage(ts, balance) {
-  localStorage.setItem(ts, JSON.stringify(balance));
-}
-
-//from localStorage
-function get(ts) {
-  var balance = localStorage.getItem(ts);
-      return JSON.parse(balance);
-}
 
 /* ------------ controller ----------------- */
 var base = 0;
-//create app
-generate();
 
-function generate(tss) {
+function generate(flag) {
 
   var all_port = get('poloniex_port').tss;
-  var tss = tss || all_port;
+  var stars = get('stars')
+  var tss = flag ? stars : all_port;
 
   var card_datas = [];
 
   var promise = new Promise(function(resolve, reject) {
 
     id('init_port').innerHTML = '';
+
     //create card object and get localStorage json
     for(var i = 0,n = tss.length; i < n; i++) {
+
       var card_data = {};
           card_data[tss[i]] = {};
           card_data[tss[i]]['poloniex'] = 0;
@@ -325,7 +324,7 @@ function update(data,tss,card_datas) {
   for(var i = 0,n = card_datas.length; i < n ; i++) { process_data(card_datas[i]); }
 
   display_total_volume(total_balance);
-  set_localStorage('d3_data',portfolios);
+  set('d3_data',portfolios);
   card_gradient();
 
   function process_data(ts) {
@@ -341,7 +340,7 @@ function update(data,tss,card_datas) {
 
     card_contents(ts,balance);
 
-    set_localStorage(ts,balance);
+    set(ts,balance);
 
     portfolios[key] = create_card_contents(key,tick,balance)[key];
 
@@ -406,7 +405,7 @@ function Card(ts,balance) {
   input.addEventListener('change', function() {
     var self = this;
     //console.log(self.value,ts);
-    set_localStorage(ts,self.value);
+    set(ts,self.value);
 
   }, false);
 
@@ -433,7 +432,7 @@ function Card(ts,balance) {
 
     }
 
-    set_localStorage('stars',stars);
+    set('stars',stars);
 
     stared();
 
@@ -443,11 +442,10 @@ function Card(ts,balance) {
 }
 
 function stared() {
+
   var stars = get('stars');
-  //console.log(stars);
-  for(var i=0,n=stars.length;i<n;i++) {
-    id(`star_${stars[i]}`).classList.add('stared')
-  }
+
+  for(var i=0,n=stars.length;i<n;i++) { id(`star_${stars[i]}`).classList.add('stared'); }
 
 }
 
@@ -455,13 +453,21 @@ function percent() {
 
   var flag = true;
   var sliders = document.querySelectorAll('.slider');
+  //console.log(sliders);
 
   id('percent').addEventListener('click', slide, false);
 
   function slide() {
 
-    console.log('slider');
-    for(var i=0,n=sliders.length;i<n;i++) { sliders[i].classList.toggle('slider_in'); }
+    var self = this;
+
+    self.classList.toggle('rotate');
+
+    for(var i=0,n=sliders.length;i<n;i++) {
+      //console.log();
+      //if(sliders[i].childNodes[0].innerHTML !== '0%') 
+      sliders[i].classList.toggle('slider_in');
+    }
 
   }
 
@@ -469,8 +475,6 @@ function percent() {
 
 //display card data
 function card_contents(ts,balance) {
-
-  //console.log(ts);
 
   var key = Object.keys(ts)[0];
   var tick = ts[key].poloniex === undefined ? 0 : ts[key].poloniex.last;
@@ -481,8 +485,9 @@ function card_contents(ts,balance) {
 
   //console.log(key === 'JPY_BTC' ? base : tick ,key);
   if(key === 'JPY_BTC') {
-    console.log(base);
+    //console.log(base);
     _tick.textContent = base;
+
   } else {
     //console.log(tick);
     _tick.textContent = tick;
@@ -497,7 +502,7 @@ function card_contents(ts,balance) {
 
 //total balance
 function display_total_volume(balance) {
-  //console.log(base , balance);
+
   var jpy = (balance * base).toFixed(0);
 
   id('total').innerHTML = `${balance.toFixed(2)}BTC / ¥${jpy}`;
@@ -509,17 +514,21 @@ function display_total_volume(balance) {
 
 //cart gradient d3.js
 function card_gradient(e) {
-  //console.log('card effet');
+
   var json = get('d3_data');
   var total_balance = 0;
 
   for(var key in json) { total_balance += json[key].btc_balance * 1; }
 
   for(var key in json) {
+
+    var percent = json[key].btc_balance/total_balance * 100;
+
     //card gradient
-    id(key).style.background = `-webkit-linear-gradient(top, #04b1f1 0%,#ffffff ${json[key].btc_balance/total_balance * 100}%)`;
+    id(key).style.background = `-webkit-linear-gradient(top, #04b1f1 0%,#ffffff ${percent}%)`;
+
     //display %
-    id(`slider_${key}`).innerHTML = `<div class="slider_inner">${(json[key].btc_balance/total_balance * 100).toFixed(0)}%</div>`
+    id(`slider_${key}`).innerHTML = `<div class="slider_inner">${percent.toFixed(0)}%</div>`
 
   }
 
@@ -579,7 +588,7 @@ function pie(json) {
     var btc_balances = [];
     var jsons = [];
 
-    console.log(json);
+    //console.log(json);
 
     for(var key in json ) {
 
@@ -590,7 +599,7 @@ function pie(json) {
     }
 
     jsons.push(ticks,balances,btc_balances);
-    console.log(jsons);
+    //console.log(jsons);
     return jsons;
 
   }

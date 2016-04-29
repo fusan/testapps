@@ -2,6 +2,10 @@ h1 {
   padding: 0 1%;
 }
 
+h1::first-letter {
+  color: red;
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -56,13 +60,20 @@ body {
 
 #percent {
   font-weight: bold;
-  color: gray;
+  color: white;
+  text-shadow: 0 0 4px black;
 
 }
 
 #star {
   color: white;
-  text-shadow: 0 0 2px red;
+  text-shadow: 0 0 4px black;
+}
+
+.rotate {
+  transform: rotateY(360deg);
+  color: red;
+  text-shadow: 0 0 4px red;
 }
 
 .modal {
@@ -92,7 +103,7 @@ body {
 
 .star {
   color: white;
-  text-shadow: 0 0 2px red;
+  text-shadow: 0 0 2px gray;
 }
 
 .stared {
