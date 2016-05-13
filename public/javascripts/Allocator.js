@@ -2,11 +2,15 @@
 
 //ポートフォリをコントロール機能
 //サーバサイドで終値を格納
-//ブラウザロード時に変化率を算出　寄与度を計算しポートフォリをの保全をする
+//ブラウザロード時に変化率を算出 寄与度を計算しポートフォリをの保全をする
+
+var base = 0;
+var stars = get('stars') || [];
+var d3_data;
 
 /* -------- poloniex portfolio init get module  -------------- */
 //アクセス時にpoloniexのBTCベースのJSONを取得するモジュール。
-var port_init = function port_init() {
+var portfolio_init = function portfolio_init() {
 
     var tss = [];
     var datas = [];
@@ -16,16 +20,21 @@ var port_init = function port_init() {
 
     ticker.done(function(data) {
 
+      console.log(data);
+
       tss.push('JPY_BTC');
       datas.push({});
 
       for( var key in data) {
+
         count++;
+
         tss.push(key);
         datas.push(data[key]);
+
         // ポートフォリオデータを格納する
         if(count >= 135) {
-          generate(tss, datas);
+          if(!get('poloniex_port')) create(tss, datas);
           //console.log(count, tss, datas);
         }
       }
@@ -33,33 +42,33 @@ var port_init = function port_init() {
     });
 
   //JSONデータの整形とlocalStorageへの格納
-  function generate(tss, data) {
+  function create(tss, data) {
 
     var poloniex = {};
         poloniex.tss = tss;
         poloniex.data = data;
 
-    if(!localStorage.getItem('poloniex_port')) {
-
-      set('poloniex_port', poloniex);
-
-      console.log(poloniex);
-
-    }
+        set('poloniex_port', poloniex);
 
   }
+
 //end
 }();
 
+
 (function star() {
 
+  var flag = true;
 
-
-  var flag = false;
   generate(flag);
-  id('star').addEventListener('click', stared, false);
 
-  function stared() {
+  id('star').style.color = 'red';
+
+  id('star').addEventListener('click', toggle_stared, false);
+
+  id('like').addEventListener('click', history, false);
+
+  function toggle_stared() {
 
     flag ? flag = false : flag = true;
 
@@ -71,6 +80,8 @@ var port_init = function port_init() {
 
   function star_style(dom, flag) {
 
+    console.log(dom);
+
     flag ? dom.style.color = 'red' : dom.style.color = 'white';
     flag ? dom.style.transform = 'rotateY(360deg)' : dom.style.transform = '';
 
@@ -78,143 +89,35 @@ var port_init = function port_init() {
 
 }());
 
-//to localStorage
-function set(ts, balance) {
+//history
+function history(e) {
 
-  localStorage.setItem(ts, JSON.stringify(balance));
+  var contents = `<div>
+                  <div class="input_port">
+                    <span>portfolio name:</span>
+                    <input type='text' id="port_memo">
+                    <button id="add_like_to_local">追加</button>
+                    </div>
+                  </div>`;
 
-}
-
-//from localStorage
-function get(ts) {
-
-  var balance = localStorage.getItem(ts);
-      return JSON.parse(balance);
-
-}
-
-//open modal
-//id('plus').addEventListener('click', open, false);
-//close modal
-//id('modal').addEventListener('click', close, false);
-//modal_inner stopPropagation
-//id('modal_inner').addEventListener('click', function(e) { e.stopPropagation();}, false);
-
-
-/* ------------------------  model --------------------------- */
-/*
-//get ts
-function open() {
-
-  id('modal').classList.add('modal');
-
-  var data = JSON.parse(localStorage.getItem('poloniex_port'));
-
-  for( var i = 0,n = data.tss.length; i < n; i++ ) {
-
-    if(i === 0) new Modal_inner_head();
-    if(data.tss[i].split('_')[0] === 'BTC') new Port_card(id('modal_inner'), data.tss[i]);
-
-  }
-
-}
-
-function close(e) {
-  id('modal').classList.remove('modal');
-  id('modal_inner').innerHTML = '';
-}
-
-//モーダルウィンドウのヘッダー生成
-
-function Modal_inner_head() {
-
-  var checked_ports = [];
-
-  var controller = document.createElement('div');
-  var submit = document.createElement('button');
-  var cancel = document.createElement('button');
-      submit.textContent = '決定';
-      cancel.textContent = 'キャンセル';
-
-  id('modal_inner').appendChild(controller);
-  controller.appendChild(submit);
-  controller.appendChild(cancel);
-
-  submit.addEventListener('click', create, false);
-
-  function create(e) {
-    console.log('create new my port');
-
-    var data = document.querySelectorAll('.pickup_port_radio');
-
-    for(var i = 0, n = data.length; i < n; i++) { if(data[i].checked === true) checked_ports.push(data[i].id.split('pickup_')[1]); }
-
-    if(i === n) set('my_port', JSON.stringify(checked_ports)); //console.log(checked_ports);
-
-    close(e);
-
-  }
-
-}
-
-
-//ポートフォリオの選択用のカードをmodal_innerにアペンドする。
-function Port_card(parent, ts) {
-
-  this.parent = parent;
-  this.ts = ts;
-
-  var div = document.createElement('div');
-  var name = document.createElement('div');
-  var input = document.createElement('input');
-      div.classList.add('pickup_port');
-      name.classList.add('pickup_port_name');
-      input.classList.add('pickup_port_radio');
-      input.type = 'radio';
-      input.id = `pickup_${this.ts}`
-
-  div.appendChild(name);
-  div.appendChild(input);
-  this.parent.appendChild(div);
-
-  name.textContent = this.ts.split('_')[1];
-
-  input.addEventListener('click', function() {
-    var self = this;
-    console.log(self.id,self.checked);
-  });
-
-}
-*/
-
-//add histrory
-/*
-function add(e) {
-
-  var json = {};
-      json['like'] = {};
-      json['like']['date'] = new Date(e.timeStamp);
-      json['like']['d3_data'] = JSON.parse(get('d3_data'));
-
-      console.log(json);
-
-  set('like',json);
-
+  var add_like_to_local = new Modal(id('modal'), id('modal_inner'),contents);
+  //console.log(add_like_to_local);
 };
-*/
 
 /* ------------ controller ----------------- */
-var base = 0;
 
+//カードを生成 -> 状態更新
 function generate(flag) {
 
+  //get card json data
   var all_port = get('poloniex_port').tss;
-  var stars = get('stars')
   var tss = flag ? stars : all_port;
+  var init_port = id('init_port');
 
   var card_datas = [];
 
-  var promise = new Promise(function(resolve, reject) {
+  //カード生成
+  var creat_card = new Promise(function(resolve, reject) {
 
     id('init_port').innerHTML = '';
 
@@ -228,7 +131,7 @@ function generate(flag) {
 
       card_datas.push(card_data);
 
-      new Card(tss[i],get(tss[i]));
+      new Card(init_port,tss[i],get(tss[i]));
 
     }
 
@@ -236,11 +139,12 @@ function generate(flag) {
 
   });
 
-  promise.then(function(value) {
+  //状態更新
+  creat_card.then(function(value) {
 
-    start(tss,card_datas);
+    get_api_data(tss,card_datas);
 
-    stared();
+    on_star();
 
     percent();
 
@@ -249,12 +153,9 @@ function generate(flag) {
 }
 
 //starting to get poloniex
-function start(tss,card_datas) {
-  console.log('start tick');
-
-  poloniex(tss,card_datas);
-
-  var bitflyer = new Bitflyer();
+function get_api_data(tss,card_datas) {
+  //console.log('start tick');
+  var bitflyer = new Bitflyer(tss,card_datas);
 
       bitflyer.start();
 
@@ -262,12 +163,16 @@ function start(tss,card_datas) {
 
 }
 
-//get poloniex api
+//get poloniex api @http request by 1 second
 function poloniex(tss,card_datas) {
   //console.log('get poloniex');
   var ticker = $.get('https://poloniex.com/public?command=returnTicker');
 
-  ticker.done(function(data) { update(data, tss, card_datas); });
+      ticker.done(function(data) {
+
+        update(data, tss, card_datas);
+
+      });
 
   var timerID = setTimeout( function() { poloniex(tss, card_datas); }, 1000);
 
@@ -276,12 +181,14 @@ function poloniex(tss,card_datas) {
 }
 
 //get bitcoin data by bitflyer lighting
-function Bitflyer() {
+function Bitflyer(tss,card_datas) {
 
   this.pubnub = PUBNUB({
       subscribe_key: "sub-c-52a9ab50-291b-11e5-baaa-0619f8945a4f",
       publish_key: 'demo'    // only required if publishing
   });
+
+  poloniex(tss,card_datas);
 
 }
 
@@ -311,6 +218,7 @@ function update(data,tss,card_datas) {
   var total_balance = 0;
   var portfolios = {};
 
+  //データ整形
   for(var i = 0, n = card_datas.length; i < n; i++) {
 
     var key = Object.keys(card_datas[i]);
@@ -318,38 +226,45 @@ function update(data,tss,card_datas) {
     card_datas[i][key]['poloniex'] = data[key];
     card_datas[i][key]['balance'] = get(key);
     //console.log(card_datas[i]);
-
   }
 
+  //カード表示の更新
   for(var i = 0,n = card_datas.length; i < n ; i++) { process_data(card_datas[i]); }
 
-  display_total_volume(total_balance);
   set('d3_data',portfolios);
+  //console.log(portfolios);
+  d3_data = portfolios;
+
   card_gradient();
+
+  display_total_BTC();
+
+  if( get('like') !== null ) create_likes_list(get('like'),portfolios);
 
   function process_data(ts) {
 
     var key = Object.keys(ts);
-    //console.log(ts[key]);
-
     var tick = ts[key].poloniex === undefined ? 1 : ts[key]['poloniex'].last;
     var balance = ts[key].balance;
-    //console.log(tick,balance);
 
     total_balance += tick * balance;
 
-    card_contents(ts,balance);
+    portfolios[key] = create_crypt_json(key,tick,balance)[key];
 
-    set(ts,balance);
+    realtime_card(ts);
 
-    portfolios[key] = create_card_contents(key,tick,balance)[key];
+  }
+
+  function display_total_BTC() {
+
+      id('total').innerHTML = realtime_total_value(total_balance);
 
   }
 
 }
 
 //data for visualize
-function create_card_contents(ts, tick, balance) {
+function create_crypt_json(ts, tick, balance) {
 
   var obj = {};
       obj[ts] = {};
@@ -363,8 +278,9 @@ function create_card_contents(ts, tick, balance) {
 
 /* --------------    view  --------------- */
 //portfolio panel
-function Card(ts,balance) {
-  var flag = true;
+function Card(parent,ts,balance) {
+
+  this.parent = parent;
   this.ts = ts;
 
   var port = document.createElement('div');
@@ -395,7 +311,8 @@ function Card(ts,balance) {
       star.textContent = '★';
 
 
-  id('init_port').appendChild(port);
+  this.parent.appendChild(port);
+
   port.appendChild(tick);
   port.appendChild(result);
   port.appendChild(input);
@@ -405,7 +322,7 @@ function Card(ts,balance) {
   input.addEventListener('change', function() {
     var self = this;
     //console.log(self.value,ts);
-    set(ts,self.value);
+    validation(self.value) === 0 ? set(ts,self.value) : self.value = '半角数字でね';
 
   }, false);
 
@@ -415,7 +332,6 @@ function Card(ts,balance) {
 
     var self = this;
     var self_id = self.id;
-    var stars = get('stars') || [];
 
     if( id(self_id).classList.contains('stared') ) { //remove
 
@@ -434,16 +350,18 @@ function Card(ts,balance) {
 
     set('stars',stars);
 
-    stared();
+    on_star();
 
   }
 
-  //new Tooltip(port,input);
+  function validation(value) {
+    //console.log(value.search( /^[-]?[0-9]+(\.[0-9]+)?$/ ));
+    return value.search( /^[-]?[0-9]+(\.[0-9]+)?$/ );
+  }
+
 }
 
-function stared() {
-
-  var stars = get('stars');
+function on_star() {
 
   for(var i=0,n=stars.length;i<n;i++) { id(`star_${stars[i]}`).classList.add('stared'); }
 
@@ -451,22 +369,18 @@ function stared() {
 
 function percent() {
 
-  var flag = true;
   var sliders = document.querySelectorAll('.slider');
-  //console.log(sliders);
 
   id('percent').addEventListener('click', slide, false);
 
   function slide() {
 
-    var self = this;
-
-    self.classList.toggle('rotate');
+    this.classList.toggle('rotate');
 
     for(var i=0,n=sliders.length;i<n;i++) {
-      //console.log();
-      //if(sliders[i].childNodes[0].innerHTML !== '0%') 
+      //if(sliders[i].childNodes[0].innerHTML !== '0%') // ノーポジションを弾く
       sliders[i].classList.toggle('slider_in');
+
     }
 
   }
@@ -474,52 +388,50 @@ function percent() {
 }
 
 //display card data
-function card_contents(ts,balance) {
-
+function realtime_card(ts) {
+  //console.log(ts);
   var key = Object.keys(ts)[0];
   var tick = ts[key].poloniex === undefined ? 0 : ts[key].poloniex.last;
-  var _balance = ts[key].balance;
+  var balance = ts[key].balance;
+
+  realtime_card_text(balance, key, tick);
+
+}
+
+function realtime_card_text(balance, key, tick) {
+
   var _tick = id(`_${key}`);
   var _balance = id(`balance_${key}`);
   var _btc_balance = id(`bitbase_balance_${key}`);
 
   //console.log(key === 'JPY_BTC' ? base : tick ,key);
-  if(key === 'JPY_BTC') {
-    //console.log(base);
-    _tick.textContent = base;
+  key === 'JPY_BTC' ? _tick.textContent = base : _tick.textContent = tick;
 
-  } else {
-    //console.log(tick);
-    _tick.textContent = tick;
-  }
-
-  isNaN(balance) ?
-  _btc_balance.innerHTML = `no balance` :
-  _btc_balance.innerHTML = key === 'JPY_BTC' ?
-    `${balance} BTC` : `${(tick * balance).toFixed(5)} BTC`;
+  isNaN(balance) ? _btc_balance.innerHTML = `no balance` : _btc_balance.innerHTML = key === 'JPY_BTC' ?  `${balance} BTC` : `${(tick * balance).toFixed(5)} BTC`;
 
 }
 
 //total balance
-function display_total_volume(balance) {
+function realtime_total_value(balance) {
 
   var jpy = (balance * base).toFixed(0);
 
-  id('total').innerHTML = `${balance.toFixed(2)}BTC / ¥${jpy}`;
+  return `${balance.toFixed(2)}BTC / ¥${jpy}`;
 
 }
-
 
 /* ---------- d3 visual ------------ */
 
 //cart gradient d3.js
 function card_gradient(e) {
 
-  var json = get('d3_data');
+  var json = d3_data; //get('d3_data'); ローカルストレージのブロッキングを回避するためにグローバル変数を活用
   var total_balance = 0;
 
+  //BTCベースのトータルバランスを計算
   for(var key in json) { total_balance += json[key].btc_balance * 1; }
 
+  //各通貨ごとの保有割合の計算
   for(var key in json) {
 
     var percent = json[key].btc_balance/total_balance * 100;
@@ -606,28 +518,110 @@ function pie(json) {
 
 }
 
+//ロード時のみ描画する
 pie(get('d3_data'));
 
-/* -------- general --------------- */
-function id(id) { return document.getElementById(id); }
+/* -------- likes --------------- */
+function create_likes_list(json, portfolios) {
+  //console.log(json, portfolios);
 
-function Tooltip(parent,input) {
-  this.parent = parent;
-  this.input = input;
+  id('likes').innerHTML = `<div id="portfolios_head">Portfolio History</div>`;
 
-  var tooltip = document.createElement('div');
-      tooltip.classList.add('tooltip');
-      tooltip.textContent = 'tes';
+  for(var i = 0,n = json.length; i < n; i++ ) {
 
-  this.parent.addEventListener('mouseenter', function() {
-    var self = this.id;
-    console.log('on',self,this);
-    this.appendChild(tooltip);
+    var date = new Date(json[i].date);
+    var btc_balance = total_balance(json[i].d3_data);
+    var memo = json[i].memo || '';
+    //console.log(btc_balance);
+    date = `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDay() + 1}`;
+
+    id('likes').innerHTML += `<div class="portfolios" id="${json[i].date}">
+                                  <span class="portfolio_date">${date}</span>
+                                  <span class="portfolio_balance"> ${btc_balance.toFixed(2)} BTC </span>
+                                  <span class="portfolio_memo">${memo}</span>
+                              <div>`;
+
+  }
+
+  function total_balance(json) {
+    var total = 0;
+    var balances = [];
+
+    for(var key in json) {
+      //console.log(key,json[key].btc_balance * 1,portfolios[key].tick * 1,(json[key].btc_balance * 1) * (portfolios[key].tick * 1));
+      total += (json[key].balance * 1) * (portfolios[key].tick * 1);
+    }
+
+    return total;
+
+  }
+
+};
+
+/* --------------------  modal view ----------------------- */
+
+function Modal(modal,modal_inner,contents) {
+
+  modal.classList.add('modal_open');
+  modal_inner.innerHTML = contents;
+
+  //set portfolio to localStorage
+  id('add_like_to_local').addEventListener('click', function(e) {
+
+    id('port_memo').value ? Modal.prototype.push_history(e) : alert('ポートフォリオ名を入れてください。');
+    modal.classList.remove('modal_open');
+    modal_inner.innerHTML = '';
+
   }, false);
 
-  this.parent.addEventListener('mouseleave',function() {
-    var self = this.id;
-    console.log('off',self);
-    this.removeChild(tooltip);
-  },false);
+  //close modal
+  modal.addEventListener('click',function(e) {
+
+    modal.classList.remove('modal_open');
+    modal_inner.innerHTML = '';
+
+  });
+
+  //stopPropagation modal_inner
+  modal_inner.addEventListener('click', function(e) {
+    e.stopPropagation();
+  }, false);
+
+}
+
+Modal.prototype.push_history = function push_history(e) {
+
+    var likes = get('like') || [];
+
+    var like = {};
+        like['memo'] = id('port_memo').value || new Date(e.timeStamp);
+        like['date'] = new Date(e.timeStamp);
+        like['d3_data'] = d3_data;//get('d3_data'); ローカルストレージのブロッキングを回避するためにグローバル変数を活用
+
+    likes.push(like);
+
+    console.log(likes);
+
+    set('like',likes);
+
+  }
+
+
+/* -------- general --------------- */
+
+//shorting
+function id(id) { return document.getElementById(id); }
+
+//to localStorage
+function set(ts, balance) {
+
+  localStorage.setItem(ts, JSON.stringify(balance));
+
+}
+
+//from localStorage
+function get(ts) {
+
+  return JSON.parse(localStorage.getItem(ts));
+
 }
