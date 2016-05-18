@@ -4,7 +4,7 @@ const router = require('express').Router();
 const server = require('http').Server(router);
 const request = require('request');
 
-const model = require('../model');
+//const model = require('../model');
 //const Poloniex = model.Poloniex;
 
 router.get('/', (req, res) => {

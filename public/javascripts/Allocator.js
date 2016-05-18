@@ -3,7 +3,6 @@
 //ポートフォリをコントロール機能
 //サーバサイドで終値を格納
 //ブラウザロード時に変化率を算出 寄与度を計算しポートフォリをの保全をする
-
 var socket = io.connect('http://localhost:4000');
 
 var stars = get('stars') || {};
@@ -94,7 +93,7 @@ function start_view() {
 
 start_view();
 
-//history
+//history ポートフォリを履歴
 function history(e) {
 
   var contents = `<div>
@@ -175,6 +174,7 @@ function update(data) {
 
 }
 
+//display total balance トータルバランス表示
 function total_balance_by_btc(balance) {
 
     id('total').innerHTML = realtime_total_value(balance);
@@ -190,7 +190,7 @@ function realtime_total_value(balance) {
 
 }
 
-//display card data
+//display card data カードデータ更新
 function rating(key,tick,balance) {
 
   var _tick = id(`_${key}`);
@@ -208,7 +208,7 @@ function rating(key,tick,balance) {
 }
 
 /* --------------    view  --------------- */
-//portfolio panel
+//portfolio panel カードオブジェクト
 function Card(parent,ts,balance) {
 
   this.parent = parent;
@@ -327,7 +327,7 @@ function percent() {
 
 }
 
-/* ---------- d3 visual ------------ */
+/* ---------- visual ------------ */
 //percent slieder display & card gradient
 function card_gradient(my_btc_balaces, total_balance) {
 
@@ -351,8 +351,6 @@ function card_gradient(my_btc_balaces, total_balance) {
   }
 
 }
-
-pie(get('d3'));
 
 function pie(json) {
 
@@ -422,7 +420,6 @@ function pie(json) {
 
 }
 
-/* -------- likes --------------- */
 function create_likes_list(historys, ticks) {
 
   id('historys').innerHTML = `<div id="portfolios_head">Portfolio History</div>`;
@@ -454,8 +451,6 @@ function create_likes_list(historys, ticks) {
   }
 
 };
-
-/* --------------------  modal view ----------------------- */
 
 function Modal(modal,modal_inner,contents) {
 
@@ -502,9 +497,44 @@ Modal.prototype.push_history = function push_history(e) {
 
   }
 
+function Tooltip(parent,contents,option) {
 
+  this.parent = parent;
+
+  var tooltip = document.createElement('div');
+      tooltip.innerHTML = contents;
+
+      tooltip.style.position = 'absolute';
+      tooltip.style.padding = '0.5%';
+      tooltip.style.height = `${option.height}px`;
+      tooltip.style.width = `${option.width}px`;
+      tooltip.style.zIndex = '10';
+      tooltip.style.fontSize = tooltip.style.lineHeight = `${font_size(contents,option.height,option.width)}px`;
+      tooltip.style.boxShadow = '0 0 1px black';
+      tooltip.style.background = 'orange';
+      tooltip.style.borderRadius = '4px';
+
+  this.parent.addEventListener('mouseenter', function(e) {
+
+    this.appendChild(tooltip);
+
+    option.position === 'left' ? tooltip.style.top = `${this.offsetTop - option.height}px` : tooltip.style.top = `${this.offsetTop + option.height/2}px`;
+    option.position === 'left' ? tooltip.style.left = `${this.offsetLeft}px` : tooltip.style.left = `${this.offsetLeft - option.width}px`;
+
+  }, false);
+
+  this.parent.addEventListener('mouseleave', function(e) {
+
+    this.removeChild(tooltip);
+
+  }, false);
+
+}
+
+pie(get('d3'));
+new Tooltip(id('history'),`過去のポートフォリオと比較して今後の判断に生かす。`,{height: 30, width: 150, position: 'left'});
+new Tooltip(id('background'),'背景色を変更できます。現在は黒と白のみです',{height: 50, width: 80, position: 'right'});
 /* -------- general --------------- */
-
 //shorting
 function id(id) { return document.getElementById(id); }
 
@@ -519,5 +549,20 @@ function set(ts, balance) {
 function get(ts) {
 
   return JSON.parse(localStorage.getItem(ts));
+
+}
+
+//adjust font siza
+function font_size(contents,height,width) {
+
+  var size;
+  var str_num = contents.length;
+  var sqr = height * width;
+
+  size = (sqr / str_num / str_num) * 1.2;
+
+  console.log(`文字数${str_num} 可能文字サイズ${sqr / str_num / str_num}`);
+
+  return parseInt(size);
 
 }
