@@ -4,275 +4,206 @@
 //サーバサイドで終値を格納
 //ブラウザロード時に変化率を算出 寄与度を計算しポートフォリをの保全をする
 
-var base = 0;
-var stars = get('stars') || [];
-var d3_data;
+var socket = io.connect('http://localhost:4000');
 
-/* -------- poloniex portfolio init get module  -------------- */
-//アクセス時にpoloniexのBTCベースのJSONを取得するモジュール。
-var portfolio_init = function portfolio_init() {
+var stars = get('stars') || {};
+var all;
 
-    var tss = [];
-    var datas = [];
-    var count = 0;
+var my_portfolio;
+var d3;
+var btc_tick = 0;
 
-    var ticker = $.get('https://poloniex.com/public?command=returnTicker');
+var init_port = id('init_port');
 
-    ticker.done(function(data) {
+//get data from servar to updating client
+socket.on('test ping', function(data) {
 
-      console.log(data);
+  var btc_only_ticker = {};
+  var datakeys = Object.keys(data);
 
-      tss.push('JPY_BTC');
-      datas.push({});
+  //reject XMR base & USDT base XMR,USD除外
+  for(var i = 0, n = datakeys.length; i < n; i++) {
 
-      for( var key in data) {
-
-        count++;
-
-        tss.push(key);
-        datas.push(data[key]);
-
-        // ポートフォリオデータを格納する
-        if(count >= 135) {
-          if(!get('poloniex_port')) create(tss, datas);
-          //console.log(count, tss, datas);
-        }
-      }
-
-    });
-
-  //JSONデータの整形とlocalStorageへの格納
-  function create(tss, data) {
-
-    var poloniex = {};
-        poloniex.tss = tss;
-        poloniex.data = data;
-
-        set('poloniex_port', poloniex);
+    if(datakeys[i].indexOf('BTC_') === 0) btc_only_ticker[datakeys[i]] = data[datakeys[i]];
 
   }
 
-//end
-}();
+  //loop end   ループ終了後の処理
+  if(i === n)  {
+
+    all = btc_only_ticker;
+
+    update(btc_only_ticker);
+
+    if( !get('ticker') ) { set('ticker',btc_only_ticker); }
+
+  }
+
+});
 
 
-(function star() {
+function start_view() {
 
+  //ロード時にお気に入りから表示するためのブラグ
   var flag = true;
 
-  generate(flag);
+  create_card(flag);
 
-  id('star').style.color = 'red';
+  star_style(id('star'), flag);
 
   id('star').addEventListener('click', toggle_stared, false);
 
-  id('like').addEventListener('click', history, false);
+  id('history').addEventListener('click', history, false);
 
   function toggle_stared() {
 
     flag ? flag = false : flag = true;
 
-    star_style(this,flag);  //style
+    star_style(this, flag);  //style
 
-    generate(flag);  //select card
-
-  }
-
-  function star_style(dom, flag) {
-
-    console.log(dom);
-
-    flag ? dom.style.color = 'red' : dom.style.color = 'white';
-    flag ? dom.style.transform = 'rotateY(360deg)' : dom.style.transform = '';
+    create_card(flag);  //card
 
   }
 
-}());
+  //stars icon action
+  function star_style(icon, flag) {
+
+    icon.classList.toggle('animate');
+    //flag ? icon.style.color = 'red' : icon.style.color = 'white';
+
+  }
+
+  //change background
+  id('background').addEventListener('click', background, false);
+
+  function background() {
+
+    var d3_ticker_symbols = document.querySelectorAll('.d3_ticker_symbol');
+
+    for(var i=0,n=d3_ticker_symbols.length;i<n;i++) d3_ticker_symbols[i].classList.toggle('d3_ticker_symbol_on');
+
+    //body
+    document.body.classList.toggle('background');
+
+    //履歴
+    id('historys').classList.toggle('historys_inner');
+
+  }
+
+};
+
+start_view();
 
 //history
 function history(e) {
 
   var contents = `<div>
                   <div class="input_port">
-                    <span>portfolio name:</span>
+                    <span>変更理由:</span>
                     <input type='text' id="port_memo">
-                    <button id="add_like_to_local">追加</button>
+                    <button id="add_history">追加</button>
                     </div>
                   </div>`;
 
-  var add_like_to_local = new Modal(id('modal'), id('modal_inner'),contents);
-  //console.log(add_like_to_local);
+  var add_history = new Modal(id('modal'), id('modal_inner'),contents);
+
 };
 
-/* ------------ controller ----------------- */
-
 //カードを生成 -> 状態更新
-function generate(flag) {
+function create_card(flag) {
 
-  //get card json data
-  var all_port = get('poloniex_port').tss;
-  var tss = flag ? stars : all_port;
-  var init_port = id('init_port');
+  var data = flag ? stars : all;
 
-  var card_datas = [];
+  init_port.innerHTML = '';
 
-  //カード生成
-  var creat_card = new Promise(function(resolve, reject) {
+  for(var key in data) new Card(init_port,key,get(key));
 
-    id('init_port').innerHTML = '';
+  on_star();
 
-    //create card object and get localStorage json
-    for(var i = 0,n = tss.length; i < n; i++) {
-
-      var card_data = {};
-          card_data[tss[i]] = {};
-          card_data[tss[i]]['poloniex'] = 0;
-          card_data[tss[i]]['balance'] = get(tss[i]) || 0;
-
-      card_datas.push(card_data);
-
-      new Card(init_port,tss[i],get(tss[i]));
-
-    }
-
-    if(i === n) resolve('ok');
-
-  });
-
-  //状態更新
-  creat_card.then(function(value) {
-
-    get_api_data(tss,card_datas);
-
-    on_star();
-
-    percent();
-
-  });
-
-}
-
-//starting to get poloniex
-function get_api_data(tss,card_datas) {
-  //console.log('start tick');
-  var bitflyer = new Bitflyer(tss,card_datas);
-
-      bitflyer.start();
-
-  id('stop').addEventListener('click', function() { bitflyer.stop(); } ,false);
-
-}
-
-//get poloniex api @http request by 1 second
-function poloniex(tss,card_datas) {
-  //console.log('get poloniex');
-  var ticker = $.get('https://poloniex.com/public?command=returnTicker');
-
-      ticker.done(function(data) {
-
-        update(data, tss, card_datas);
-
-      });
-
-  var timerID = setTimeout( function() { poloniex(tss, card_datas); }, 1000);
-
-  id('stop').addEventListener('click', function() { clearTimeout(timerID); }, false);
-
-}
-
-//get bitcoin data by bitflyer lighting
-function Bitflyer(tss,card_datas) {
-
-  this.pubnub = PUBNUB({
-      subscribe_key: "sub-c-52a9ab50-291b-11e5-baaa-0619f8945a4f",
-      publish_key: 'demo'    // only required if publishing
-  });
-
-  poloniex(tss,card_datas);
-
-}
-
-Bitflyer.prototype.start = function start() {
-
-  this.pubnub.subscribe({
-    channel: "lightning_ticker_BTC_JPY",
-    message: function(data) {
-      base = `${data.best_bid}`;
-      //console.log('get bitflyer');
-    }
-   });
-
-}
-
-Bitflyer.prototype.stop = function stop() {
-  console.log('stop bitflyer');
-  this.pubnub.unsubscribe({
-    channel: "lightning_ticker_BTC_JPY"
-  });
+  percent();
 
 }
 
 //updating ticker data
-function update(data,tss,card_datas) {
+function update(data) {
 
   var total_balance = 0;
-  var portfolios = {};
+  var my_btc_balaces = {};
+  var my_balaces = {};
+  var ticks = {}
 
-  //データ整形
-  for(var i = 0, n = card_datas.length; i < n; i++) {
+  for(var key in data) process_data(key,data[key]);
 
-    var key = Object.keys(card_datas[i]);
+  function process_data(key,data) {
 
-    card_datas[i][key]['poloniex'] = data[key];
-    card_datas[i][key]['balance'] = get(key);
-    //console.log(card_datas[i]);
-  }
+    var tick = data.last;
+    var balance = get(key) || 0;
 
-  //カード表示の更新
-  for(var i = 0,n = card_datas.length; i < n ; i++) { process_data(card_datas[i]); }
+    if(key === 'BTC_JPY') {
 
-  set('d3_data',portfolios);
-  //console.log(portfolios);
-  d3_data = portfolios;
+      my_btc_balaces[key] = balance * 1;
+      my_balaces[key] = balance * 1;
+      ticks[key] = 1;
 
-  card_gradient();
+      btc_tick = tick;
 
-  display_total_BTC();
+      total_balance += balance * 1;
 
-  if( get('like') !== null ) create_likes_list(get('like'),portfolios);
+    } else if (balance !== 0 ){
 
-  function process_data(ts) {
+      my_btc_balaces[key] = tick * balance * 1;
+      my_balaces[key] = balance * 1;
+      ticks[key] = tick;
 
-    var key = Object.keys(ts);
-    var tick = ts[key].poloniex === undefined ? 1 : ts[key]['poloniex'].last;
-    var balance = ts[key].balance;
+      total_balance += tick * balance * 1;
 
-    total_balance += tick * balance;
+    }
 
-    portfolios[key] = create_crypt_json(key,tick,balance)[key];
-
-    realtime_card(ts);
+    rating(key,tick,balance);
 
   }
 
-  function display_total_BTC() {
+  if( get('historys') !== null ) create_likes_list(get('historys'),ticks);
 
-      id('total').innerHTML = realtime_total_value(total_balance);
+  card_gradient(my_btc_balaces,total_balance);
 
-  }
+  total_balance_by_btc(total_balance);
+
+  my_portfolio = my_balaces;
+
+  set('d3', my_btc_balaces);
 
 }
 
-//data for visualize
-function create_crypt_json(ts, tick, balance) {
+function total_balance_by_btc(balance) {
 
-  var obj = {};
-      obj[ts] = {};
-      obj[ts]['tick'] = tick;
-      obj[ts]['balance'] = balance;
-      obj[ts]['btc_balance'] = tick * balance;
+    id('total').innerHTML = realtime_total_value(balance);
 
-  return obj;
+}
+
+//total balance
+function realtime_total_value(balance) {
+
+  var jpy = (balance * btc_tick).toFixed(0);
+
+  return `${balance.toFixed(2)}BTC / ¥${jpy}`;
+
+}
+
+//display card data
+function rating(key,tick,balance) {
+
+  var _tick = id(`_${key}`);
+  var _btc_balance = id(`bitbase_balance_${key}`);
+
+  if(_tick) {
+
+    _tick.innerHTML = tick;
+
+    key === 'BTC_JPY' ? _btc_balance.innerHTML = `${balance} BTC` : _btc_balance.innerHTML = `${(tick * balance).toFixed(5)} BTC`;
+
+  }
+
 
 }
 
@@ -284,7 +215,7 @@ function Card(parent,ts,balance) {
   this.ts = ts;
 
   var port = document.createElement('div');
-      port.textContent = this.ts.split('_')[1];
+      port.innerHTML = this.ts === 'BTC_JPY' ? `<span class='ticker_symbol'>BTC</span>` : `<span class='ticker_symbol'>${this.ts.split('_')[1]}</span>`;
       port.id = this.ts;
       port.classList.add('card');
 
@@ -303,7 +234,7 @@ function Card(parent,ts,balance) {
 
   var result = document.createElement('div');
       result.id = `bitbase_balance_${this.ts}`;
-      result.classList.add('bircon_balance');
+      result.classList.add('bitcon_balance');
 
   var star = document.createElement('span');
       star.id = `star_${this.ts}`;
@@ -319,32 +250,39 @@ function Card(parent,ts,balance) {
   port.appendChild(slider);
   port.appendChild(star);
 
-  input.addEventListener('change', function() {
-    var self = this;
-    //console.log(self.value,ts);
-    validation(self.value) === 0 ? set(ts,self.value) : self.value = '半角数字でね';
-
-  }, false);
+  input.addEventListener('keyup', add_balance, false);
 
   star.addEventListener('click', add_stars, false);
+
+  function add_balance() {
+
+    var self = this;
+
+    set(ts,self.value);
+
+    //validation(self.value) === 0 ? set(ts,self.value) : self.value = '半角数字でね';
+
+  }
 
   function add_stars() {
 
     var self = this;
-    var self_id = self.id;
+    var _id = self.id; //star_BTC_ETH
+    var ticker_symbol = _id.split('star_')[1]; //BTC_ETH
 
-    if( id(self_id).classList.contains('stared') ) { //remove
+    if( id(_id).classList.contains('stared') ) { //remove
+      //console.log('stared');
+      id(_id).classList.remove('stared');
 
-      id(self_id).classList.remove('stared');
-
-      for( var i=0,n=stars.length;i<n;i++ ) { if( stars[i] === self_id.split('star_')[1] ) stars.splice(i,1); }
+      for( var key in stars ) {
+        if( key === ticker_symbol ) delete stars[key];
+      }
 
     } else { //add
-
-      stars.push(self_id.split('star_')[1]);
-
-      //重複チェック
-      stars = stars.filter(function (x, i, self) { return self.indexOf(x) === i; });
+      //console.log('non stared');
+      for(var key in all ) {
+        if( key === ticker_symbol) stars[key] = all[key];
+      }
 
     }
 
@@ -363,7 +301,7 @@ function Card(parent,ts,balance) {
 
 function on_star() {
 
-  for(var i=0,n=stars.length;i<n;i++) { id(`star_${stars[i]}`).classList.add('stared'); }
+  for( var key in stars ) id(`star_${key}`).classList.add('stared');
 
 }
 
@@ -375,10 +313,12 @@ function percent() {
 
   function slide() {
 
-    this.classList.toggle('rotate');
+    console.log(this.classList);
+
+    this.classList.contains('percent_action') ? this.classList.remove('percent_action') : this.classList.add('percent_action');
 
     for(var i=0,n=sliders.length;i<n;i++) {
-      //if(sliders[i].childNodes[0].innerHTML !== '0%') // ノーポジションを弾く
+
       sliders[i].classList.toggle('slider_in');
 
     }
@@ -387,68 +327,38 @@ function percent() {
 
 }
 
-//display card data
-function realtime_card(ts) {
-  //console.log(ts);
-  var key = Object.keys(ts)[0];
-  var tick = ts[key].poloniex === undefined ? 0 : ts[key].poloniex.last;
-  var balance = ts[key].balance;
-
-  realtime_card_text(balance, key, tick);
-
-}
-
-function realtime_card_text(balance, key, tick) {
-
-  var _tick = id(`_${key}`);
-  var _balance = id(`balance_${key}`);
-  var _btc_balance = id(`bitbase_balance_${key}`);
-
-  //console.log(key === 'JPY_BTC' ? base : tick ,key);
-  key === 'JPY_BTC' ? _tick.textContent = base : _tick.textContent = tick;
-
-  isNaN(balance) ? _btc_balance.innerHTML = `no balance` : _btc_balance.innerHTML = key === 'JPY_BTC' ?  `${balance} BTC` : `${(tick * balance).toFixed(5)} BTC`;
-
-}
-
-//total balance
-function realtime_total_value(balance) {
-
-  var jpy = (balance * base).toFixed(0);
-
-  return `${balance.toFixed(2)}BTC / ¥${jpy}`;
-
-}
-
 /* ---------- d3 visual ------------ */
+//percent slieder display & card gradient
+function card_gradient(my_btc_balaces, total_balance) {
 
-//cart gradient d3.js
-function card_gradient(e) {
-
-  var json = d3_data; //get('d3_data'); ローカルストレージのブロッキングを回避するためにグローバル変数を活用
-  var total_balance = 0;
-
-  //BTCベースのトータルバランスを計算
-  for(var key in json) { total_balance += json[key].btc_balance * 1; }
+  var total = 0;
 
   //各通貨ごとの保有割合の計算
-  for(var key in json) {
+  for(var key in my_btc_balaces) {
 
-    var percent = json[key].btc_balance/total_balance * 100;
+    var percent = my_btc_balaces[key]/total_balance * 100;
 
-    //card gradient
-    id(key).style.background = `-webkit-linear-gradient(top, #04b1f1 0%,#ffffff ${percent}%)`;
+    if(id(key)) {
 
-    //display %
-    id(`slider_${key}`).innerHTML = `<div class="slider_inner">${percent.toFixed(0)}%</div>`
+      //card gradient
+      id(key).style.background = `-webkit-linear-gradient(top, rgba(0, 176, 251, 0.94) 0%,rgba(255,255,255,0.04) ${percent}%)`;
+
+      //display %
+      id(`slider_${key}`).innerHTML = `<div class="slider_inner">${percent.toFixed(0)}%</div>`;
+
+    }
 
   }
 
 }
 
+pie(get('d3'));
+
 function pie(json) {
 
   var data = create_data_for_d3(json);
+
+    console.log(data);
 
   var chart_width = 400, chart_height = 400;
   var ir = 50,or = 100;
@@ -472,7 +382,7 @@ function pie(json) {
               "transform": `translate(${chart_width / 2}, ${chart_height / 2})`
             })
 
-  var chart = field.selectAll('path').data(pie(data[2])).enter()
+  var chart = field.selectAll('path').data(pie(data[1])).enter()
         .append('g');
 
 
@@ -490,52 +400,42 @@ function pie(json) {
           .attr("transform", function(d) { return `translate(${labelArc.centroid(d) + 80})`; })
           .style({"text-anchor": "middle",
                   'font-size': '8px'})
-          .text(function(d,i){ return`${data[0][i].split('_')[1]}`; });
+          .attr('class', 'd3_ticker_symbol')
+          .text(function(d,i){ return data[0][i] === 'BTC_JPY' ? 'BTC' : `${data[0][i].split('BTC_')[1]}`; });
 
   function create_data_for_d3(json) {
 
-    var json = json;
-    var ticks = [];
-    var balances = [];
-    var btc_balances = [];
-    var jsons = [];
-
-    //console.log(json);
+    var jsons = [],keys = [],balances = [];
 
     for(var key in json ) {
 
-      ticks.push(key);
-      balances.push(json[key]['balance'])
-      btc_balances.push(json[key]['btc_balance']);
+      keys.push(key);
+      balances.push(json[key]);
 
     }
 
-    jsons.push(ticks,balances,btc_balances);
-    //console.log(jsons);
+    jsons.push(keys,balances);
+
     return jsons;
 
   }
 
 }
 
-//ロード時のみ描画する
-pie(get('d3_data'));
-
 /* -------- likes --------------- */
-function create_likes_list(json, portfolios) {
-  //console.log(json, portfolios);
+function create_likes_list(historys, ticks) {
 
-  id('likes').innerHTML = `<div id="portfolios_head">Portfolio History</div>`;
+  id('historys').innerHTML = `<div id="portfolios_head">Portfolio History</div>`;
 
-  for(var i = 0,n = json.length; i < n; i++ ) {
+  for(var i = 0,n = historys.length; i < n; i++ ) {
 
-    var date = new Date(json[i].date);
-    var btc_balance = total_balance(json[i].d3_data);
-    var memo = json[i].memo || '';
+    var date = new Date(historys[i].date);
+    var btc_balance = total_balance(historys[i].history,ticks);
+    var memo = historys[i].memo;
     //console.log(btc_balance);
     date = `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDay() + 1}`;
 
-    id('likes').innerHTML += `<div class="portfolios" id="${json[i].date}">
+    id('historys').innerHTML += `<div class="portfolios" id="${historys[i].date}">
                                   <span class="portfolio_date">${date}</span>
                                   <span class="portfolio_balance"> ${btc_balance.toFixed(2)} BTC </span>
                                   <span class="portfolio_memo">${memo}</span>
@@ -543,14 +443,11 @@ function create_likes_list(json, portfolios) {
 
   }
 
-  function total_balance(json) {
-    var total = 0;
-    var balances = [];
+  function total_balance(history,ticks) {
 
-    for(var key in json) {
-      //console.log(key,json[key].btc_balance * 1,portfolios[key].tick * 1,(json[key].btc_balance * 1) * (portfolios[key].tick * 1));
-      total += (json[key].balance * 1) * (portfolios[key].tick * 1);
-    }
+    var total = 0;
+
+    for(var key in history) key === 'BTC_JPY' ? total += history[key] : total += history[key] * ticks[key];
 
     return total;
 
@@ -566,9 +463,10 @@ function Modal(modal,modal_inner,contents) {
   modal_inner.innerHTML = contents;
 
   //set portfolio to localStorage
-  id('add_like_to_local').addEventListener('click', function(e) {
+  id('add_history').addEventListener('click', function(e) {
 
-    id('port_memo').value ? Modal.prototype.push_history(e) : alert('ポートフォリオ名を入れてください。');
+    id('port_memo').value ? Modal.prototype.push_history(e) : alert('アセット変更した理由をおせーて');
+
     modal.classList.remove('modal_open');
     modal_inner.innerHTML = '';
 
@@ -591,18 +489,16 @@ function Modal(modal,modal_inner,contents) {
 
 Modal.prototype.push_history = function push_history(e) {
 
-    var likes = get('like') || [];
+    var historys = get('historys') || [];
 
-    var like = {};
-        like['memo'] = id('port_memo').value || new Date(e.timeStamp);
-        like['date'] = new Date(e.timeStamp);
-        like['d3_data'] = d3_data;//get('d3_data'); ローカルストレージのブロッキングを回避するためにグローバル変数を活用
+    var history = {};
+        history['memo'] = id('port_memo').value;
+        history['date'] = new Date(e.timeStamp);
+        history['history'] = my_portfolio;
 
-    likes.push(like);
+    historys.push(history);
 
-    console.log(likes);
-
-    set('like',likes);
+    set('historys',historys);
 
   }
 
