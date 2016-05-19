@@ -1,8 +1,12 @@
 'use strict';
 
-//ポートフォリをコントロール機能
-//サーバサイドで終値を格納
-//ブラウザロード時に変化率を算出 寄与度を計算しポートフォリをの保全をする
+/*
+  サーバサイドで終値を格納
+  ブラウザロード時に変化率を算出 寄与度を計算しポートフォリをの保全をする
+  スタート時の画面を追加する。 再度見るためのヘルプボタンを設置
+  sdd_stras fn で星がない時の'BTC_JPY','BTC_ETH'とかのlocalStorage.removeIemを定義
+*/
+
 var socket = io.connect('http://localhost:4000');
 
 var stars = get('stars') || {};
@@ -13,6 +17,24 @@ var d3;
 var btc_tick = 0;
 
 var init_port = id('init_port');
+
+var _ua = function _ua(u){
+  return {
+    Tablet:(u.indexOf("windows") != -1 && u.indexOf("touch") != -1)
+      || u.indexOf("ipad") != -1
+      || (u.indexOf("android") != -1 && u.indexOf("mobile") == -1)
+      || (u.indexOf("firefox") != -1 && u.indexOf("tablet") != -1)
+      || u.indexOf("kindle") != -1
+      || u.indexOf("silk") != -1
+      || u.indexOf("playbook") != -1,
+    Mobile:(u.indexOf("windows") != -1 && u.indexOf("phone") != -1)
+      || u.indexOf("iphone") != -1
+      || u.indexOf("ipod") != -1
+      || (u.indexOf("android") != -1 && u.indexOf("mobile") != -1)
+      || (u.indexOf("firefox") != -1 && u.indexOf("mobile") != -1)
+      || u.indexOf("blackberry") != -1
+  }
+}(window.navigator.userAgent.toLowerCase());
 
 //get data from servar to updating client
 socket.on('test ping', function(data) {
@@ -43,16 +65,29 @@ socket.on('test ping', function(data) {
 
 function start_view() {
 
-  //ロード時にお気に入りから表示するためのブラグ
-  var flag = true;
+  var flag = true; //starsでcardをロードする
 
   create_card(flag);
 
   star_style(id('star'), flag);
 
-  id('star').addEventListener('click', toggle_stared, false);
+  if(_ua.Mobile || _ua.Tablet) {
 
-  id('history').addEventListener('click', history, false);
+    id('star').addEventListener('touchstart', toggle_stared, false);
+
+    id('history').addEventListener('touchstart', history, false);
+
+    id('randscape').addEventListener('touchstart', randscape, false);
+
+  } else {
+
+    id('star').addEventListener('click', toggle_stared, false);
+
+    id('history').addEventListener('click', history, false);
+
+    id('randscape').addEventListener('click', randscape, false);
+
+  }
 
   function toggle_stared() {
 
@@ -67,25 +102,19 @@ function start_view() {
   //stars icon action
   function star_style(icon, flag) {
 
-    icon.classList.toggle('animate');
-    //flag ? icon.style.color = 'red' : icon.style.color = 'white';
+    icon.classList.toggle('star_rotate');
 
   }
 
-  //change background
-  id('background').addEventListener('click', background, false);
-
-  function background() {
+  function randscape() {
 
     var d3_ticker_symbols = document.querySelectorAll('.d3_ticker_symbol');
 
+    //d3 pie chart text fill color
     for(var i=0,n=d3_ticker_symbols.length;i<n;i++) d3_ticker_symbols[i].classList.toggle('d3_ticker_symbol_on');
 
-    //body
-    document.body.classList.toggle('background');
-
-    //履歴
-    id('historys').classList.toggle('historys_inner');
+    //document.body
+    document.body.classList.toggle('randscape');
 
   }
 
@@ -98,8 +127,7 @@ function history(e) {
 
   var contents = `<div>
                   <div class="input_port">
-                    <span>変更理由:</span>
-                    <input type='text' id="port_memo">
+                    <textarea rows="4" cols="40" id="port_memo" placeholder="アセット変更事由"></textarea>
                     <button id="add_history">追加</button>
                     </div>
                   </div>`;
@@ -142,6 +170,7 @@ function update(data) {
 
       my_btc_balaces[key] = balance * 1;
       my_balaces[key] = balance * 1;
+
       ticks[key] = 1;
 
       btc_tick = tick;
@@ -152,6 +181,7 @@ function update(data) {
 
       my_btc_balaces[key] = tick * balance * 1;
       my_balaces[key] = balance * 1;
+
       ticks[key] = tick;
 
       total_balance += tick * balance * 1;
@@ -200,10 +230,11 @@ function rating(key,tick,balance) {
 
     _tick.innerHTML = tick;
 
-    key === 'BTC_JPY' ? _btc_balance.innerHTML = `${balance} BTC` : _btc_balance.innerHTML = `${(tick * balance).toFixed(5)} BTC`;
+    key === 'BTC_JPY' ?
+      _btc_balance.innerHTML = `${balance} BTC` :
+      _btc_balance.innerHTML = `${(tick * balance).toFixed(5)} BTC`;
 
   }
-
 
 }
 
@@ -215,7 +246,9 @@ function Card(parent,ts,balance) {
   this.ts = ts;
 
   var port = document.createElement('div');
-      port.innerHTML = this.ts === 'BTC_JPY' ? `<span class='ticker_symbol'>BTC</span>` : `<span class='ticker_symbol'>${this.ts.split('_')[1]}</span>`;
+      port.innerHTML = this.ts === 'BTC_JPY' ?
+        `<span class='ticker_symbol'>BTC</span>` :
+        `<span class='ticker_symbol'>${this.ts.split('_')[1]}</span>`;
       port.id = this.ts;
       port.classList.add('card');
 
@@ -252,7 +285,12 @@ function Card(parent,ts,balance) {
 
   input.addEventListener('keyup', add_balance, false);
 
-  star.addEventListener('click', add_stars, false);
+  if(_ua.Mobile || _ua.Tablet) {
+    star.addEventListener('touchstart', add_stars, false);
+  } else {
+    star.addEventListener('click', add_stars, false);
+  }
+
 
   function add_balance() {
 
@@ -309,13 +347,17 @@ function percent() {
 
   var sliders = document.querySelectorAll('.slider');
 
-  id('percent').addEventListener('click', slide, false);
+  if(_ua.Mobile || _ua.Tablet) {
+    id('percent').addEventListener('touchstart', slide, false);
+  } else {
+    id('percent').addEventListener('click', slide, false);
+  }
 
   function slide() {
 
-    console.log(this.classList);
-
-    this.classList.contains('percent_action') ? this.classList.remove('percent_action') : this.classList.add('percent_action');
+    this.classList.contains('percent_action') ?
+      this.classList.remove('percent_action') :
+      this.classList.add('percent_action');
 
     for(var i=0,n=sliders.length;i<n;i++) {
 
@@ -457,28 +499,41 @@ function Modal(modal,modal_inner,contents) {
   modal.classList.add('modal_open');
   modal_inner.innerHTML = contents;
 
-  //set portfolio to localStorage
-  id('add_history').addEventListener('click', function(e) {
+  if(_ua.Mobile || _ua.Tablet) {
+
+    id('add_history').addEventListener('touchstart', add_history, false); //set portfolio to localStorage
+
+    modal.addEventListener('touchstart',close, false); //close modal
+
+    //stopPropagation modal_inner
+    modal_inner.addEventListener('touchstart', stop , false);
+
+  } else {
+
+    id('add_history').addEventListener('click', add_history, false); //set portfolio to localStorage
+
+    modal.addEventListener('click',close, false); //close modal
+
+    modal_inner.addEventListener('click', stop , false);//stopPropagation modal_inner
+  }
+
+  function add_history(e) {
 
     id('port_memo').value ? Modal.prototype.push_history(e) : alert('アセット変更した理由をおせーて');
 
     modal.classList.remove('modal_open');
     modal_inner.innerHTML = '';
 
-  }, false);
+  }
 
-  //close modal
-  modal.addEventListener('click',function(e) {
+  function close(e) {
 
     modal.classList.remove('modal_open');
     modal_inner.innerHTML = '';
 
-  });
+  }
 
-  //stopPropagation modal_inner
-  modal_inner.addEventListener('click', function(e) {
-    e.stopPropagation();
-  }, false);
+  function stop(e) { e.stopPropagation(); }
 
 }
 
@@ -497,43 +552,67 @@ Modal.prototype.push_history = function push_history(e) {
 
   }
 
+//Tooltip Object
 function Tooltip(parent,contents,option) {
 
   this.parent = parent;
 
   var tooltip = document.createElement('div');
-      tooltip.innerHTML = contents;
 
-      tooltip.style.position = 'absolute';
-      tooltip.style.padding = '0.5%';
-      tooltip.style.height = `${option.height}px`;
-      tooltip.style.width = `${option.width}px`;
-      tooltip.style.zIndex = '10';
-      tooltip.style.fontSize = tooltip.style.lineHeight = `${font_size(contents,option.height,option.width)}px`;
-      tooltip.style.boxShadow = '0 0 1px black';
-      tooltip.style.background = 'orange';
-      tooltip.style.borderRadius = '4px';
+  var size = font_size(contents,option.height,option.width);
 
-  this.parent.addEventListener('mouseenter', function(e) {
+    tooltip.innerHTML = contents;
 
-    this.appendChild(tooltip);
+    this.parent.position = 'relative';
+    tooltip.style.height = `${option.height}px`;
+    tooltip.style.width = `${option.width}px`;
+    tooltip.style.fontSize = '10px';//`${size}px`;
+    tooltip.style.lineHeight = '10px';//`${size}px`;
 
-    option.position === 'left' ? tooltip.style.top = `${this.offsetTop - option.height}px` : tooltip.style.top = `${this.offsetTop + option.height/2}px`;
-    option.position === 'left' ? tooltip.style.left = `${this.offsetLeft}px` : tooltip.style.left = `${this.offsetLeft - option.width}px`;
+    tooltip.classList.add('tooltip');
 
-  }, false);
+    //open tooltip
+    this.parent.addEventListener('mouseenter', open , false);
 
-  this.parent.addEventListener('mouseleave', function(e) {
+    //close tooltip
+    this.parent.addEventListener('mouseleave', function(e) { this.removeChild(tooltip); }, false);
 
-    this.removeChild(tooltip);
+    function open(e) {
 
-  }, false);
+      this.appendChild(tooltip);
+
+      if( option.position === 'left' ) {
+
+        tooltip.style.top = `${ this.offsetTop - option.height * 1.5 }px`
+        tooltip.style.left = `${ this.offsetLeft }px`
+
+      } else if( option.position === 'right' ) {
+
+        tooltip.style.top = `${ this.offsetTop + option.height }px`;
+        tooltip.style.left = `${ this.offsetLeft - option.width }px`;
+
+      }
+
+  }
+
+}
+
+function donate(_id,options) { //options.text = '自分のbitcoin addressを入れる'
+
+  $(function(){
+      $(`#${_id}`).qrcode(options);
+  });
+
+  id(_id).addEventListener('click', function(){ alert(`カウンターパティーアドレス ${options.text}`);}, false);
 
 }
 
 pie(get('d3'));
-new Tooltip(id('history'),`過去のポートフォリオと比較して今後の判断に生かす。`,{height: 30, width: 150, position: 'left'});
-new Tooltip(id('background'),'背景色を変更できます。現在は黒と白のみです',{height: 50, width: 80, position: 'right'});
+
+new Tooltip(id('history'),`現在のポートフォリオを追加、過去ポートフォリオ比較検証する`,{height: 30, width: 150, position: 'left'});
+new Tooltip(id('randscape'),'背景色を変更できます。現在は黒と白のみです',{height: 30, width: 150, position: 'right'});
+
+donate('donate', {text: '1PtibcQsFf8S3uxweTGcFc6WyjoYU1652k', width: 50, height: 50});
 /* -------- general --------------- */
 //shorting
 function id(id) { return document.getElementById(id); }
@@ -559,10 +638,10 @@ function font_size(contents,height,width) {
   var str_num = contents.length;
   var sqr = height * width;
 
-  size = (sqr / str_num / str_num) * 1.2;
+    size = parseInt( width / Math.sqrt( sqr / str_num ));
 
-  console.log(`文字数${str_num} 可能文字サイズ${sqr / str_num / str_num}`);
+    //console.log(`文字数${str_num} 可能文字サイズ${size}px`);
 
-  return parseInt(size);
+    return parseInt(size);
 
 }
