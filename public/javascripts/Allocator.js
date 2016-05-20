@@ -73,6 +73,8 @@ function start_view() {
 
   star_style(id('star'), flag);
 
+  create_historys_head();
+
   if(_ua.Mobile || _ua.Tablet) {
 
     id('star').addEventListener('touchstart', toggle_stared, false);
@@ -194,7 +196,7 @@ function update(data) {
 
   }
 
-  if( get('historys') !== null ) create_likes_list(get('historys'),ticks);
+  if( get('historys') !== null ) create_historys_body(get('historys'),ticks);
 
   card_gradient(my_btc_balaces,total_balance);
 
@@ -380,7 +382,7 @@ function card_gradient(my_btc_balaces, total_balance) {
   //各通貨ごとの保有割合の計算
   for(var key in my_btc_balaces) {
 
-    var percent = my_btc_balaces[key]/total_balance * 100;
+    var percent = my_btc_balaces[key] / total_balance * 100;
 
     if(id(key)) {
 
@@ -464,19 +466,27 @@ function pie(json) {
 
 }
 
-function create_likes_list(historys, ticks) {
+function create_historys_head() {
 
-  id('historys').innerHTML = `<div id="portfolios_head">Portfolio History</div>`;
+  console.log(new Date(get('historys')[1].date).getTime());
+
+  id('history_head').innerHTML = `<span id="portfolios_head">Portfolio History</span>`;
+
+}
+
+function create_historys_body(historys, ticks) {
+
+  id('history_body').innerHTML = '';
 
   for(var i = 0,n = historys.length; i < n; i++ ) {
 
     var date = new Date(historys[i].date);
     var btc_balance = total_balance(historys[i].history,ticks);
     var memo = historys[i].memo;
-    //console.log(btc_balance);
+    
     date = `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDay() + 1}`;
 
-    id('historys').innerHTML += `<div class="portfolios" id="${historys[i].date}">
+    id('history_body').innerHTML += `<div class="portfolios" id="${historys[i].date}">
                                   <span class="portfolio_date">${date}</span>
                                   <span class="portfolio_balance"> ${btc_balance.toFixed(2)} BTC </span>
                                   <span class="portfolio_memo">${memo}</span>
