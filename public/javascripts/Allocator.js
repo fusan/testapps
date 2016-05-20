@@ -5,9 +5,11 @@
   ブラウザロード時に変化率を算出 寄与度を計算しポートフォリをの保全をする
   スタート時の画面を追加する。 再度見るためのヘルプボタンを設置
   sdd_stras fn で星がない時の'BTC_JPY','BTC_ETH'とかのlocalStorage.removeIemを定義
+  portfolio remove button
+  d3 update button
 */
 
-var socket = io.connect('http://localhost:4000');
+var socket = io.connect('http://localhost:4000');//io.connect('http://52.196.67.15:4000');
 
 var stars = get('stars') || {};
 var all;

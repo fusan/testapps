@@ -27,7 +27,7 @@ function ticker(io, socket) {
   var bitflyer = new Promise((resolve, reject) => {
 
     request('https://api.bitflyer.jp/v1/getticker',(err, res, body) => {
-      //console.log('bitflyer',body);
+      //console.log('bitflyer',JSON.parse(body)['best_bid']);
       if(err) throw err;
        resolve(JSON.parse(body));
     });
@@ -38,6 +38,8 @@ function ticker(io, socket) {
       //var data = {JPY_BTC: {last: value[2]['best_bid']}};
       var data = value[0];
           data['BTC_JPY'] = { last: value[1]['best_bid']};
+
+          //console.log(data);
 
       socket.emit('test ping',data);
 

@@ -1,2 +1,3 @@
 # testapps
-portfolio
+
+サーバーアップロードしたらsocketサーバーアドレス変更
