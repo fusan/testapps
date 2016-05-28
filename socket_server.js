@@ -28,6 +28,7 @@ function ticker(io, socket) {
 
     request('https://api.bitflyer.jp/v1/getticker',(err, res, body) => {
       //console.log('bitflyer',JSON.parse(body)['best_bid']);
+      //console.log(body);
       if(err) throw err;
        resolve(JSON.parse(body));
     });
@@ -43,7 +44,7 @@ function ticker(io, socket) {
 
       socket.emit('test ping',data);
 
-      setTimeout(function() { ticker(io, socket); }, 1000);
+      setTimeout(function() { ticker(io, socket); }, 1500);
 
   });
 }

@@ -73,6 +73,8 @@ footer {
   /*box-shadow: 0 0 1px gray;*/
 }
 
+
+
 #historys {
   float: left;
   width: 69%;
@@ -99,7 +101,7 @@ footer {
 #modal {
   position: absolute;
   top: 0;
-  width: 40%;
+  width: 100%;
   transition: 0.5s ease 0;
 }
 
@@ -263,8 +265,8 @@ footer {
 }
 
 .modal_open {
-  width: 50%;
-  height: 30%;
+  width: 100%;
+  height: 100%;
   background: rgba(18, 18, 18, 0.62);
   transition: 1s ease 0;
   z-index: 10;
@@ -285,6 +287,10 @@ footer {
   color: red;
 }
 
+.on_remove_button {
+  background: red;
+}
+
 .d3_ticker_symbol_on {
   fill: white;
 }
@@ -299,13 +305,34 @@ footer {
 }
 
 .portfolios {
-  margin: 1% 0 0 2%;
-  width: 95.5%;
+  margin: 1% 2%;
+  width: 94.5%;
+  height: auto;
 }
 
-.portfolio_memo,.portfolio_date,.portfolio_balance {
-  margin: 0 0.5rem 0 0;
+.portfolio_memo,.portfolio_date,.portfolio_balance,.portfolio_remove_button {
+  margin: 0;
   padding: 0;
+  height: 1rem;
+  line-height: 1rem;
+}
+
+.portfolio_remove_button {
+  display: none;
+  margin-right: 0.5%;
+  width: 0;
+  height: 0;
+  border-radius: 100%;
+  border: 1px dotted white;
+  box-shadow: 0 0 1px black;
+  transition: 0.05s ease 0;
+}
+
+.portfolio_remove_button_on {
+  display: inline-block;
+  width: 0.6rem;
+  height: 0.6rem;
+  transition: 0.05s ease 0;
 }
 
 .tooltip {
@@ -349,7 +376,6 @@ footer {
     width: 100%;
     height: 100%;
     border-top: 0px dotted gray;
-    overflow: hidden;
   }
 
   #modal {
@@ -384,7 +410,6 @@ footer {
 
   .card  * {
     width: 88%;
-    overflow: hidden;
   }
 
   .slider {

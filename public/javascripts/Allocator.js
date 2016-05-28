@@ -5,7 +5,8 @@
   ブラウザロード時に変化率を算出 寄与度を計算しポートフォリをの保全をする
   スタート時の画面を追加する。 再度見るためのヘルプボタンを設置
   sdd_stras fn で星がない時の'BTC_JPY','BTC_ETH'とかのlocalStorage.removeIemを定義
-  portfolio remove button
+  history_body is nearly card style ,card inner is sepatated view and socket
+  data have to be individual ,bitflyer and poloniex response
   d3 update button
 */
 
@@ -75,19 +76,17 @@ function start_view() {
 
   create_historys_head();
 
+  if( get('historys') !== null ) create_historys_body(get('historys'));
+
   if(_ua.Mobile || _ua.Tablet) {
 
     id('star').addEventListener('touchstart', toggle_stared, false);
-
-    id('history').addEventListener('touchstart', history, false);
 
     id('randscape').addEventListener('touchstart', randscape, false);
 
   } else {
 
     id('star').addEventListener('click', toggle_stared, false);
-
-    id('history').addEventListener('click', history, false);
 
     id('randscape').addEventListener('click', randscape, false);
 
@@ -132,11 +131,17 @@ function history(e) {
   var contents = `<div>
                   <div class="input_port">
                     <textarea rows="4" cols="40" id="port_memo" placeholder="アセット変更事由"></textarea>
-                    <button id="add_history">追加</button>
                     </div>
                   </div>`;
 
-  var add_history = new Modal(id('modal'), id('modal_inner'),contents);
+  var history = new Modal(id('modal'), id('modal_inner'),contents);
+
+      history.submit.addEventListener('click', history.add, false);
+      history.submit.addEventListener('click', history.submit_close, false);
+      history.modal.addEventListener('click', history.close, false);
+
+
+      history.submit.addEventListener('click', function () { create_historys_body( get('historys') ); }, false );
 
 };
 
@@ -151,7 +156,7 @@ function create_card(flag) {
 
   on_star();
 
-  percent();
+  on_percent();
 
 }
 
@@ -196,9 +201,9 @@ function update(data) {
 
   }
 
-  if( get('historys') !== null ) create_historys_body(get('historys'),ticks);
+  if( get('historys') !== null ) create_historys_ticks(get('historys'),ticks);
 
-  card_gradient(my_btc_balaces,total_balance);
+  create_card_ratio(my_btc_balaces,total_balance);
 
   total_balance_by_btc(total_balance);
 
@@ -347,7 +352,7 @@ function on_star() {
 
 }
 
-function percent() {
+function on_percent() {
 
   var sliders = document.querySelectorAll('.slider');
 
@@ -374,8 +379,9 @@ function percent() {
 }
 
 /* ---------- visual ------------ */
+
 //percent slieder display & card gradient
-function card_gradient(my_btc_balaces, total_balance) {
+function create_card_ratio(my_btc_balaces, total_balance) {
 
   var total = 0;
 
@@ -386,18 +392,25 @@ function card_gradient(my_btc_balaces, total_balance) {
 
     if(id(key)) {
 
-      //card gradient
-      id(key).style.background = `-webkit-linear-gradient(top, rgba(0, 176, 251, 0.94) 0%,rgba(255,255,255,0.04) ${percent}%)`;
+      card_gradient(key, percent);
 
-      //display %
-      id(`slider_${key}`).innerHTML = `<div class="slider_inner">${percent.toFixed(0)}%</div>`;
+      card_slider(key, percent);
 
     }
 
   }
 
+  function card_gradient() {
+    id(key).style.background = `-webkit-linear-gradient(top, rgba(0, 176, 251, 0.94) 0%,rgba(255,255,255,0.04) ${percent}%)`;
+  }
+
+  function card_slider(key, percent) {
+    id(`slider_${key}`).innerHTML = `<div class="slider_inner">${percent.toFixed(0)}%</div>`;
+  }
+
 }
 
+//d3 visualize
 function pie(json) {
 
   var data = create_data_for_d3(json);
@@ -466,31 +479,198 @@ function pie(json) {
 
 }
 
+//portfolio head creater
 function create_historys_head() {
 
-  console.log(new Date(get('historys')[1].date).getTime());
+  var flag = true;
 
-  id('history_head').innerHTML = `<span id="portfolios_head">Portfolio History</span>`;
+  var remove_lists = [];
+
+  /*var button = document.createElement('button');
+      button.textContent = '決定';
+      button.id = 'confirm_remove';*/
+
+  id('history_head').innerHTML = `<span id="portfolios_head">Portfolio History</span>
+                                  <span id="history" class="button">+</span>
+                                  <span id="remove_history" class="button">-</span>`;
+
+  id('remove_history').addEventListener('click', start_remove_process, false);
+
+  id('history').addEventListener('click', history, false);
+
+  //start remove process
+  function start_remove_process() {
+
+    console.log(flag);
+
+    var historys = get('historys');
+    var remove_buttons = document.querySelectorAll('.portfolio_remove_button');
+
+    for( var i = 0, n = remove_buttons.length; i < n; i++ ) button_action(remove_buttons[i]);
+
+    if(flag) {
+
+      for( var i = 0,n = historys.length; i < n; i++ ) get_list(historys[i]);
+
+      //id('history_body').appendChild(button);
+      //button.addEventListener('click',remove , false);
+
+      flag = false;
+
+    } else {
+
+      //button.parentNode.removeChild(button);
+
+      flag = true;
+
+    }
+
+  }
+
+  //display on removing portfolio button
+  function button_action(remove_button) {
+
+    !remove_button.classList.contains('portfolio_remove_button_on') ?
+        remove_button.classList.add('portfolio_remove_button_on') :
+        remove_button.classList.remove('portfolio_remove_button_on');
+
+  }
+
+  //get remove portfolio list
+  function get_list(history) {
+
+    var date = new Date(history.date);
+    var _id = `portfolio_${date.getTime()}`;
+    var _id_remove = `remove_button_${_id}`;
+
+    id(_id_remove).addEventListener('click', checked, false);
+
+  }
+
+  function checked() {
+
+    var _id = this.id;
+    var _id_remove = _id.split('remove_button_portfolio_')[1];
+
+    id(_id).classList.toggle('on_remove_button');
+
+    remove_one(_id_remove);
+
+    //list_up(_id_remove); //まとめで消去
+    //remove(_id_remove);
+
+  }
+
+  function remove_one(id) {
+    console.log(id);
+
+    var historys = get('historys');
+    var index;
+
+        for( var i = 0, n = historys.length; i < n; i++ ) {
+          if( new Date(historys[i].date).getTime() === id * 1 ) {
+            console.log('get');
+            index = i;
+          };
+        }
+
+    if( i === n) {
+      historys.splice(index,1);
+
+      set('historys',historys);
+
+      create_historys_body(historys);
+
+      flag = true;
+
+      console.log(historys);
+    }
+
+
+  }
+
+  function list_up(_id) {
+
+    remove_lists.push(_id);
+
+    console.log(remove_lists);
+
+  }
+
+  function remove() {
+
+    console.log('comfirm');
+
+    var historys = get('historys');
+    var remove_num = [];
+
+    console.log('in',historys);
+
+    for( var i = 0,n = remove_lists.length; i < n; i++ ) {
+      for( var j = 0, m = historys.length; j < m; j++ ) {
+        //console.log(new Date(historys[j].date).getTime() === remove_lists[i] * 1);
+        if( new Date(historys[j].date).getTime() === remove_lists[i] * 1) {
+
+          var index = historys.indexOf(historys[j]);
+              remove_num.push(index);
+          console.log('delete',index);
+
+        }
+      }
+    }
+
+    if(i === n) {
+
+      console.log(remove_num);
+
+    }
+
+    //set('historys', historys);
+
+    create_historys_body(historys);
+
+    flag = true;
+
+  }
 
 }
 
-function create_historys_body(historys, ticks) {
+
+//portfolio list view
+function create_historys_body(historys) {
 
   id('history_body').innerHTML = '';
 
   for(var i = 0,n = historys.length; i < n; i++ ) {
 
     var date = new Date(historys[i].date);
-    var btc_balance = total_balance(historys[i].history,ticks);
     var memo = historys[i].memo;
-    
+    var _id = `portfolio_${date.getTime()}`;
+    var _id_remove = `remove_button_${_id}`;
+
     date = `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDay() + 1}`;
 
     id('history_body').innerHTML += `<div class="portfolios" id="${historys[i].date}">
-                                  <span class="portfolio_date">${date}</span>
-                                  <span class="portfolio_balance"> ${btc_balance.toFixed(2)} BTC </span>
-                                  <span class="portfolio_memo">${memo}</span>
-                              <div>`;
+                                      <span class="portfolio_remove_button" id="${_id_remove}"></span>
+                                      <span class="portfolio_date">${date}</span>
+                                      <span class="portfolio_balance" id="${_id}"></span>
+                                      <span class="portfolio_memo">${memo}</span>
+                                    <div>`;
+
+  }
+
+};
+
+//portfolio list updater
+function create_historys_ticks(historys,ticks) {
+
+  for(var i = 0,n = historys.length; i < n; i++ ) {
+
+    var date = new Date(historys[i].date);
+    var btc_balance = total_balance(historys[i].history,ticks);
+    var _id = `portfolio_${date.getTime()}`;
+
+    if(id(_id)) id(_id).innerHTML = `${btc_balance.toFixed(2)} BTC`;
 
   }
 
@@ -504,52 +684,45 @@ function create_historys_body(historys, ticks) {
 
   }
 
-};
+}
 
+//modal Cladd
 function Modal(modal,modal_inner,contents) {
 
-  modal.classList.add('modal_open');
-  modal_inner.innerHTML = contents;
+  this.modal = modal;
+  this.modal_inner = modal_inner;
+  this.contents = contents;
 
-  if(_ua.Mobile || _ua.Tablet) {
+  this.submit = document.createElement('button');
+  this.submit.textContent = 'add';
+  this.submit.id = 'add_history';
 
-    id('add_history').addEventListener('touchstart', add_history, false); //set portfolio to localStorage
+  this.modal.classList.add('modal_open');
 
-    modal.addEventListener('touchstart',close, false); //close modal
+  this.modal_inner.innerHTML = contents;
+  this.modal_inner.appendChild(this.submit);
 
-    //stopPropagation modal_inner
-    modal_inner.addEventListener('touchstart', stop , false);
-
-  } else {
-
-    id('add_history').addEventListener('click', add_history, false); //set portfolio to localStorage
-
-    modal.addEventListener('click',close, false); //close modal
-
-    modal_inner.addEventListener('click', stop , false);//stopPropagation modal_inner
-  }
-
-  function add_history(e) {
-
-    id('port_memo').value ? Modal.prototype.push_history(e) : alert('アセット変更した理由をおせーて');
-
-    modal.classList.remove('modal_open');
-    modal_inner.innerHTML = '';
-
-  }
-
-  function close(e) {
-
-    modal.classList.remove('modal_open');
-    modal_inner.innerHTML = '';
-
-  }
+  this.modal_inner.addEventListener('touchstart', stop , false);
+  this.modal_inner.addEventListener('click', stop , false);
 
   function stop(e) { e.stopPropagation(); }
 
 }
 
-Modal.prototype.push_history = function push_history(e) {
+//Modal add method
+Modal.prototype.add = function add(e) {
+
+  id('port_memo').value ? Modal.to_localStorage(e) : alert('アセット変更した理由をおせーて');
+
+};
+
+//Modal remove method
+Modal.prototype.remove = function remove(e) {
+  console.log('remove history');
+}
+
+//Modal model method
+Modal.to_localStorage = function to_localStorage(e) {
 
     var historys = get('historys') || [];
 
@@ -558,13 +731,29 @@ Modal.prototype.push_history = function push_history(e) {
         history['date'] = new Date(e.timeStamp);
         history['history'] = my_portfolio;
 
-    historys.push(history);
+        historys.push(history);
 
-    set('historys',historys);
+        set('historys',historys);
 
-  }
+  };
 
-//Tooltip Object
+//Modal close method
+Modal.prototype.close = function close(e) {
+
+    this.classList.remove('modal_open');
+    this.children[0].innerHTML = '';
+
+  };
+
+//Modal close method by submit button
+Modal.prototype.submit_close = function close(e) {
+
+    this.parentNode.parentNode.classList.remove('modal_open');
+    this.parentNode.innerHTML = '';
+
+  };
+
+//Tooltip Class
 function Tooltip(parent,contents,option) {
 
   this.parent = parent;
@@ -595,8 +784,8 @@ function Tooltip(parent,contents,option) {
 
       if( option.position === 'left' ) {
 
-        tooltip.style.top = `${ this.offsetTop - option.height * 1.5 }px`
-        tooltip.style.left = `${ this.offsetLeft }px`
+        tooltip.style.top = `${ this.offsetTop - option.height * 0.5 }px`
+        tooltip.style.left = `${ this.offsetLeft + option.width * 0.5 }px`
 
       } else if( option.position === 'right' ) {
 
