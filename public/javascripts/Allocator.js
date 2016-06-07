@@ -5,9 +5,8 @@
   ブラウザロード時に変化率を算出 寄与度を計算しポートフォリをの保全をする
   スタート時の画面を追加する。 再度見るためのヘルプボタンを設置
   sdd_stras fn で星がない時の'BTC_JPY','BTC_ETH'とかのlocalStorage.removeIemを定義
-  history_body is nearly card style ,card inner is sepatated view and socket
+  history_body is nearly card style
   data have to be individual ,bitflyer and poloniex response
-  d3 update button
 */
 
 var socket = io.connect('http://localhost:4000');//io.connect('http://52.196.67.15:4000');
@@ -39,6 +38,21 @@ var _ua = function _ua(u){
   }
 }(window.navigator.userAgent.toLowerCase());
 
+start_view();
+
+create_chart_head();
+
+create_chart_body(get('d3'));
+
+create_chart_head();
+
+create_chart_body(get('d3'));
+
+new Tooltip(id('history'),`現在のポートフォリオを追加、過去ポートフォリオ比較検証する`,{height: 30, width: 150, position: 'left'});
+new Tooltip(id('randscape'),'背景色を変更できます。現在は黒と白のみです',{height: 30, width: 150, position: 'right'});
+
+donate('donate', {text: '1PtibcQsFf8S3uxweTGcFc6WyjoYU1652k', width: 50, height: 50});
+
 //get data from servar to updating client
 socket.on('test ping', function(data) {
 
@@ -65,7 +79,7 @@ socket.on('test ping', function(data) {
 
 });
 
-
+//starting view
 function start_view() {
 
   var flag = true; //starsでcardをロードする
@@ -109,21 +123,49 @@ function start_view() {
 
   }
 
-  function randscape() {
+};
 
-    var d3_ticker_symbols = document.querySelectorAll('.d3_ticker_symbol');
+//change background & font color
+function randscape(type) {
+
+  var d3_ticker_symbols = document.querySelectorAll('.d3_ticker_symbol');
+
+  if(type === 'chart') {
 
     //d3 pie chart text fill color
-    for(var i=0,n=d3_ticker_symbols.length;i<n;i++) d3_ticker_symbols[i].classList.toggle('d3_ticker_symbol_on');
+    if(document.body.classList.contains('randscape')) {
+
+      for(var i=0,n=d3_ticker_symbols.length;i<n;i++) { d3_ticker_symbols[i].classList.add('d3_ticker_symbol_on'); }
+
+    } else {
+
+      for(var i=0,n=d3_ticker_symbols.length;i<n;i++) { d3_ticker_symbols[i].classList.remove('d3_ticker_symbol_on'); }
+
+    }
+
+  } else {
+
+    //d3 pie chart text fill color
+    for(var i=0,n=d3_ticker_symbols.length;i<n;i++) {
+
+      if(!d3_ticker_symbols[i].classList.contains('d3_ticker_symbol_on')) {
+
+        d3_ticker_symbols[i].classList.add('d3_ticker_symbol_on');
+
+      } else {
+
+        d3_ticker_symbols[i].classList.remove('d3_ticker_symbol_on');
+
+      }
+
+    }
 
     //document.body
     document.body.classList.toggle('randscape');
 
   }
 
-};
-
-start_view();
+}
 
 //history ポートフォリを履歴
 function history(e) {
@@ -346,12 +388,14 @@ function Card(parent,ts,balance) {
 
 }
 
+//onstar action
 function on_star() {
 
   for( var key in stars ) id(`star_${key}`).classList.add('stared');
 
 }
 
+//percent action
 function on_percent() {
 
   var sliders = document.querySelectorAll('.slider');
@@ -377,8 +421,6 @@ function on_percent() {
   }
 
 }
-
-/* ---------- visual ------------ */
 
 //percent slieder display & card gradient
 function create_card_ratio(my_btc_balaces, total_balance) {
@@ -410,14 +452,40 @@ function create_card_ratio(my_btc_balaces, total_balance) {
 
 }
 
-//d3 visualize
-function pie(json) {
+//chart head
+function create_chart_head() {
+
+  var update = document.createElement('span');
+
+
+  var svg = document.createElement('img');
+      svg.src = '../images/icon_refresh.svg';
+      svg.id = 'refresh_chart';
+
+      update.appendChild(svg);
+      //update.textContent = 'update';
+
+  id('chart_head').innerHTML = '';
+
+  id('chart_head').appendChild(svg);
+
+  svg.addEventListener('click', function() { create_chart_body(get('d3')); }, false);
+  svg.addEventListener('click', function() { randscape('chart'); }, false);
+  svg.addEventListener('click', function() { this.classList.toggle('refresh_chart_rotate'); }, false);
+
+}
+
+//chart body
+function create_chart_body(json) {
 
   var data = create_data_for_d3(json);
 
-    console.log(data);
+  id('chart_body').innerHTML = '';
 
-  var chart_width = 400, chart_height = 400;
+    console.log(data);
+    //console.log(id('chart').offsetWidth,id('chart').offsetHeight);
+
+  var chart_width = id('chart').offsetWidth, chart_height = id('chart').offsetWidth;
   var ir = 50,or = 100;
   var color = d3.scale.category20();
 
@@ -428,7 +496,7 @@ function pie(json) {
     .outerRadius(chart_width / 2 - 80)
     .innerRadius(chart_width / 2 - 80);
 
-  var field = d3.select('#chart')
+  var field = d3.select('#chart_body')
           .append('svg')
             .attr({
               "width": chart_width,
@@ -441,7 +509,6 @@ function pie(json) {
 
   var chart = field.selectAll('path').data(pie(data[1])).enter()
         .append('g');
-
 
       chart.append('path')
         .attr({
@@ -479,7 +546,7 @@ function pie(json) {
 
 }
 
-//portfolio head creater
+//history head
 function create_historys_head() {
 
   var flag = true;
@@ -635,8 +702,7 @@ function create_historys_head() {
 
 }
 
-
-//portfolio list view
+//history body
 function create_historys_body(historys) {
 
   id('history_body').innerHTML = '';
@@ -698,6 +764,7 @@ function Modal(modal,modal_inner,contents) {
   this.submit.id = 'add_history';
 
   this.modal.classList.add('modal_open');
+  this.modal.style.top = `${window.pageYOffset}px`;
 
   this.modal_inner.innerHTML = contents;
   this.modal_inner.appendChild(this.submit);
@@ -798,6 +865,7 @@ function Tooltip(parent,contents,option) {
 
 }
 
+//create donate qrcode
 function donate(_id,options) { //options.text = '自分のbitcoin addressを入れる'
 
   $(function(){
@@ -808,12 +876,6 @@ function donate(_id,options) { //options.text = '自分のbitcoin addressを入�
 
 }
 
-pie(get('d3'));
-
-new Tooltip(id('history'),`現在のポートフォリオを追加、過去ポートフォリオ比較検証する`,{height: 30, width: 150, position: 'left'});
-new Tooltip(id('randscape'),'背景色を変更できます。現在は黒と白のみです',{height: 30, width: 150, position: 'right'});
-
-donate('donate', {text: '1PtibcQsFf8S3uxweTGcFc6WyjoYU1652k', width: 50, height: 50});
 /* -------- general --------------- */
 //shorting
 function id(id) { return document.getElementById(id); }
