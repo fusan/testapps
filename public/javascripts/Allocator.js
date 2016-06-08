@@ -167,26 +167,6 @@ function randscape(type) {
 
 }
 
-//history ポートフォリを履歴
-function history(e) {
-
-  var contents = `<div>
-                  <div class="input_port">
-                    <textarea rows="4" cols="40" id="port_memo" placeholder="アセット変更事由"></textarea>
-                    </div>
-                  </div>`;
-
-  var history = new Modal(id('modal'), id('modal_inner'),contents);
-
-      history.submit.addEventListener('click', history.add, false);
-      history.submit.addEventListener('click', history.submit_close, false);
-      history.modal.addEventListener('click', history.close, false);
-
-
-      history.submit.addEventListener('click', function () { create_historys_body( get('historys') ); }, false );
-
-};
-
 //カードを生成 -> 状態更新
 function create_card(flag) {
 
@@ -545,6 +525,26 @@ function create_chart_body(json) {
   }
 
 }
+
+//history ポートフォリを履歴
+function history(e) {
+
+  var contents = `<div>
+                  <div class="input_port">
+                    <textarea rows="4" cols="40" id="port_memo" placeholder="アセット変更事由"></textarea>
+                    </div>
+                  </div>`;
+
+  var history = new Modal(id('modal'), id('modal_inner'),contents);
+
+      history.submit.addEventListener('click', history.add, false);
+      history.submit.addEventListener('click', history.submit_close, false);
+      history.modal.addEventListener('click', history.close, false);
+
+
+      history.submit.addEventListener('click', function () { create_historys_body( get('historys') ); }, false );
+
+};
 
 //history head
 function create_historys_head() {
