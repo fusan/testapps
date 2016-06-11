@@ -42,7 +42,7 @@ function ticker(io, socket) {
 
           //console.log(data);
 
-      socket.emit('test ping',data);
+      socket.emit('ticker data',data);
 
       setTimeout(function() { ticker(io, socket); }, 1500);
 

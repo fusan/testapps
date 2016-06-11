@@ -98,21 +98,15 @@ footer {
   height: 320px;
 }
 
-#total {
-
-}
-
 #modal {
   position: absolute;
   top:0;
-  padding: 10% 0 0 0;
   width: 100%;
   transition: 0.5s ease 0;
   z-index: 5;
 }
 
 #modal_inner {
-  overflow: hidden;
   margin: 0 auto;
   width: 60%;
   height: 60%;
@@ -299,6 +293,10 @@ footer {
   transition: 1s ease 0;
 }
 
+.modal_open > #modal_inner {
+  margin: 10% auto;
+}
+
 .key,.btc_balance,.per_btc {
   display: inline-block;
   padding: 0.1rem 0.2rem;
@@ -414,7 +412,6 @@ footer {
   }
 
   #modal_inner {
-    overflow: scroll;
     margin: 0 auto;
     width: 70%;
     height: 70%;
@@ -472,14 +469,6 @@ footer {
     margin: 2px auto;
     font-size: 0.7rem;
     background: rgb(252, 252, 252);
-  }
-
-  .modal_open {
-    height: 100%;
-    width: 100%;
-    background: rgba(18, 18, 18, 0.62);
-    transition: 1s ease 0;
-    z-index: 200;
   }
 
 }

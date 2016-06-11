@@ -9,14 +9,34 @@
   data have to be individual ,bitflyer and poloniex response
 */
 
+class Fusan {
+  constructor() {
+    this.name = 'fusan';
+  }
+
+  say() {
+    console.log(this.name);
+  }
+
+  /*delay() {
+    setTimeout(() => {
+          alert(this.name);
+        }, 2000);
+  }*/
+}
+
+var fusan = new Fusan();
+fusan.say();
+//fusan.delay(); //chrome ok
+
 var socket = io.connect('http://localhost:4000');//io.connect('http://52.196.67.15:4000');
 
 var stars = get('stars') || {};
-var all;
 
-var my_portfolio;
-var d3;
-var btc_tick = 0;
+var all,
+    d3,
+    my_portfolio,
+    btc_tick = 0;
 
 var init_port = id('init_port');
 
@@ -54,7 +74,7 @@ new Tooltip(id('randscape'),'背景色を変更できます。現在は黒と白
 donate('donate', {text: '1PtibcQsFf8S3uxweTGcFc6WyjoYU1652k', width: 50, height: 50});
 
 //get data from servar to updating client
-socket.on('test ping', function(data) {
+socket.on('ticker data', function(data) {
 
   var btc_only_ticker = {};
   var datakeys = Object.keys(data);
@@ -526,26 +546,6 @@ function create_chart_body(json) {
 
 }
 
-//history ポートフォリを履歴
-function history(e) {
-
-  var contents = `<div>
-                  <div class="input_port">
-                    <textarea rows="4" cols="40" id="port_memo" placeholder="アセット変更事由"></textarea>
-                    </div>
-                  </div>`;
-
-  var history = new Modal(id('modal'), id('modal_inner'),contents);
-
-      history.submit.addEventListener('click', history.add, false);
-      history.submit.addEventListener('click', history.submit_close, false);
-      history.modal.addEventListener('click', history.close, false);
-
-
-      history.submit.addEventListener('click', function () { create_historys_body( get('historys') ); }, false );
-
-};
-
 //history head
 function create_historys_head() {
 
@@ -563,7 +563,7 @@ function create_historys_head() {
 
   id('remove_history').addEventListener('click', start_remove_process, false);
 
-  id('history').addEventListener('click', history, false);
+  id('history').addEventListener('click', open_history_modal, false);
 
   //start remove process
   function start_remove_process() {
@@ -727,6 +727,25 @@ function create_historys_body(historys) {
 
 };
 
+//history ポートフォリを履歴
+function open_history_modal(e) {
+
+  var contents = `<div>
+                  <div class="input_port">
+                    <textarea rows="4" cols="40" id="port_memo" placeholder="アセット変更事由"></textarea>
+                    </div>
+                  </div>`;
+
+  var history = new Modal(id('modal'), id('modal_inner'),contents);
+
+      history.submit.addEventListener('click', history.add, false);
+      history.submit.addEventListener('click', history.submit_close, false);
+      history.modal.addEventListener('click', history.close, false);
+
+      history.submit.addEventListener('click', function () { create_historys_body( get('historys') ); }, false );
+
+};
+
 //portfolio list updater
 function create_historys_ticks(historys,ticks) {
 
@@ -764,7 +783,7 @@ function Modal(modal,modal_inner,contents) {
   this.submit.id = 'add_history';
 
   this.modal.classList.add('modal_open');
-  this.modal.style.top = `${window.pageYOffset}px`;
+  //this.modal.style.top = `${window.pageYOffset}px`; //to css file
 
   this.modal_inner.innerHTML = contents;
   this.modal_inner.appendChild(this.submit);
