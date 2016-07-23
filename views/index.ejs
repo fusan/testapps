@@ -9,4 +9,33 @@
     <p>Welcome to <%= title %></p>
     <a href="/portfolio">portfolio</a>
   </body>
+  <script>
+
+  class Rect {
+    constructor(x1, y1, x2, y2) {
+      this.x1 = x1;
+      this.y1 = y1;
+      this.x2 = x2;
+      this.y2 = y2;
+    }
+
+    get width() {
+      return this.x2 - this.x1;
+    }
+
+    get height() {
+      return this.y2 - this.y1;
+    }
+
+    get area() {
+      return this.width * this.height;
+    }
+  }
+
+  const a = new Rect(0,0,20,30);
+  const b = new Rect(3,3,50,34);
+  console.log(a.area,a.width);
+  console.log(b.area);
+
+  </script>
 </html>

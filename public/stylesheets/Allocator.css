@@ -130,7 +130,7 @@ footer {
 
 #chart_head {
   margin: 1% 0 0 2%;
-  height: 1.5rem;
+  height: 10%;
   width: 98%;
 }
 
@@ -297,6 +297,10 @@ footer {
   margin: 10% auto;
 }
 
+.scroll_stop {
+  position: fixed;
+}
+
 .key,.btc_balance,.per_btc {
   display: inline-block;
   padding: 0.1rem 0.2rem;
@@ -369,6 +373,23 @@ footer {
   border-radius : 4px;
   box-shadow:0 0 1px black;
   z-index: 10;
+}
+
+#download {
+  text-decoration: none;
+}
+
+#path_tooltip {
+  position: absolute;
+  z-index: 10;
+  visibility: hidden;
+  padding: 0 5px;
+  border: 1px solid #000;
+  border-radius: 3px;
+  background-color: #333;
+  color: #fff;
+  font-size: 11px;
+  opacity: 0.8;
 }
 
 @media screen and (max-width: 768px) {

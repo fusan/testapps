@@ -7,29 +7,13 @@
   sdd_stras fn で星がない時の'BTC_JPY','BTC_ETH'とかのlocalStorage.removeIemを定義
   history_body is nearly card style
   data have to be individual ,bitflyer and poloniex response
+  out put data backup fold option 最重要
+   backup button genarate backup.json include localStorage.data
+   push button that backup array create to use by getItem();
+   resotare to setItem()
 */
 
-class Fusan {
-  constructor() {
-    this.name = 'fusan';
-  }
-
-  say() {
-    console.log(this.name);
-  }
-
-  /*delay() {
-    setTimeout(() => {
-          alert(this.name);
-        }, 2000);
-  }*/
-}
-
-var fusan = new Fusan();
-fusan.say();
-//fusan.delay(); //chrome ok
-
-var socket = io.connect('http://localhost:4000');//io.connect('http://52.196.67.15:4000');
+var socket = io.connect('http://localhost:4000');//io.connect('http://52.197.11.201:4000');
 
 var stars = get('stars') || {};
 
@@ -210,6 +194,8 @@ function update(data) {
   var my_balaces = {};
   var ticks = {}
 
+  console.log(data);
+
   for(var key in data) process_data(key,data[key]);
 
   function process_data(key,data) {
@@ -228,7 +214,7 @@ function update(data) {
 
       total_balance += balance * 1;
 
-    } else if (balance !== 0 ){
+    } else if (balance !== 0 && balance !== ''){
 
       my_btc_balaces[key] = tick * balance * 1;
       my_balaces[key] = balance * 1;
@@ -243,7 +229,7 @@ function update(data) {
 
   }
 
-  if( get('historys') !== null ) create_historys_ticks(get('historys'),ticks);
+  if( get('historys') !== null ) create_historys_ticks(get('historys'),data);
 
   create_card_ratio(my_btc_balaces,total_balance);
 
@@ -267,8 +253,13 @@ function realtime_total_value(balance) {
 
   var jpy = (balance * btc_tick).toFixed(0);
 
-  return `${balance.toFixed(2)}BTC / ¥${jpy}`;
+  return `${balance.toFixed(2)}BTC / ¥${comma(jpy)}`;
 
+}
+
+//add comma
+function comma(str) {
+  return str.replace( /(\d)(?=(\d\d\d)+(?!\d))/g, '$1,');
 }
 
 //display card data カードデータ更新
@@ -347,7 +338,7 @@ function Card(parent,ts,balance) {
 
     var self = this;
 
-    set(ts,self.value);
+    self.value === '' ? localStorage.removeItem(ts) : set(ts,self.value);
 
     //validation(self.value) === 0 ? set(ts,self.value) : self.value = '半角数字でね';
 
@@ -457,7 +448,6 @@ function create_chart_head() {
 
   var update = document.createElement('span');
 
-
   var svg = document.createElement('img');
       svg.src = '../images/icon_refresh.svg';
       svg.id = 'refresh_chart';
@@ -479,53 +469,116 @@ function create_chart_head() {
 function create_chart_body(json) {
 
   var data = create_data_for_d3(json);
+  var tickers = data[0];
+  var balances = data[1];
+  var total = function() {
+    var num = 0;
+    for(var i=0,n=balances.length;i<n;i++) {
+      num += balances[i] * 1;
+    }
+    return num;
+  }();
 
   id('chart_body').innerHTML = '';
+  id('chart_body').innerHTML += '<span id="path_tooltip">test</span>';
 
-    console.log(data);
-    //console.log(id('chart').offsetWidth,id('chart').offsetHeight);
+  //console.log(data,d3.pairs(data[1]));
+  //console.log(id('chart').offsetWidth,id('chart').offsetHeight);
 
-  var chart_width = id('chart').offsetWidth, chart_height = id('chart').offsetWidth;
-  var ir = 50,or = 100;
+  //chart prop
+  var chart_width = `${id('chart_body').offsetWidth}` , chart_height = `${id('chart_body').offsetWidth * 0.9 }`;
+  var ir = 50,or = 100,or_on = 110;
   var color = d3.scale.category20();
 
+  //d3 pie prop
   var arc = d3.svg.arc().innerRadius(ir).outerRadius(or);
+  var arc2 = d3.svg.arc().innerRadius(ir).outerRadius(or_on);
   var pie = d3.layout.pie().value(function(d) { return d; });
-
   var labelArc = d3.svg.arc()
     .outerRadius(chart_width / 2 - 80)
     .innerRadius(chart_width / 2 - 80);
 
+  //pir path prop
+  var pie_init = {
+      "d": function(d) {
+        return arc(d);
+        console.log(d, arc(d));
+      },
+      "fill": function(d) { return color(d.data); }
+    }
+
+  //chart svg path
   var field = d3.select('#chart_body')
           .append('svg')
             .attr({
               "width": chart_width,
-              "height": chart_height
+              "height": chart_height,
+              'id': 'chart_field'
             })
           .append('g')
             .attr({
               "transform": `translate(${chart_width / 2}, ${chart_height / 2})`
             })
 
-  var chart = field.selectAll('path').data(pie(data[1])).enter()
-        .append('g');
+      field.append('text')
+          .attr({
+            'fill': 'black',
+            'id': 'total',
+            'transform': `translate(${-id('total').clientHeight / 2}, ${-id('total').clientWidth / 2})`
+          })
+          .text(function() {
+            console.log(id('total').clientHeight, id('total').clientWidth);
+
+            return `${total.toFixed(1)} BTC`;
+
+          })
+
+  var chart = field.selectAll('path').data(pie(data[1])).enter().append('g');
 
       chart.append('path')
-        .attr({
-          "d": function(d) {
-            return arc(d);
-            console.log(d, arc(d));
-          },
-          "fill": function(d) { return color(d.data); }
+        .attr(pie_init)
+        .on('mouseenter', function(d,i) {
+
+          //active path on mouse
+          d3.select(this).transition().duration(100).attr('opacity', '0.4');
+
+        })
+        .on('click', function(d,i) {
+
+          //add tooltip on svg path
+          id('path_tooltip').innerHTML = `${tickers[i].split('_')[1]} ${balances[i].toFixed(2)} BTC ${ parseInt(balances[i]/ total * 100) }%`;
+
+          id('path_tooltip').style.visibility = "visible";
+          id('path_tooltip').style.top = `${event.pageY + 20}px`;
+          id('path_tooltip').style.left = `${event.pageX + 20}px`;
+
+          //expand path radius
+          d3.select(this).transition().duration(100).attr({
+            "d": function(d) { return arc2(d); }
+          });
+
+        })
+        .on('mouseleave', function(d,i) {
+
+          id('path_tooltip').style.visibility = "hidden";
+
+          //shlink path radius
+          d3.select(this).transition().duration(200).attr({
+            "d": function(d) { return arc(d); },
+            'opacity': '1'
+          });
+
         });
 
       chart.append("text")
           .attr("dy", "0.25em")
-          .attr("transform", function(d) { return `translate(${labelArc.centroid(d) + 80})`; })
+          .attr("transform", function(d) { return `translate(${labelArc.centroid(d) + 70})`; })
           .style({"text-anchor": "middle",
                   'font-size': '8px'})
           .attr('class', 'd3_ticker_symbol')
-          .text(function(d,i){ return data[0][i] === 'BTC_JPY' ? 'BTC' : `${data[0][i].split('BTC_')[1]}`; });
+          .text(function(d,i){
+            return tickers[i] === 'BTC_JPY' ? 'BTC' : `${tickers[i].split('BTC_')[1]}`;
+          });
 
   function create_data_for_d3(json) {
 
@@ -558,8 +611,11 @@ function create_historys_head() {
       button.id = 'confirm_remove';*/
 
   id('history_head').innerHTML = `<span id="portfolios_head">Portfolio History</span>
-                                  <span id="history" class="button">+</span>
-                                  <span id="remove_history" class="button">-</span>`;
+                                  <span id="history" class="button"><img src="../images/icon_plus.svg"></span>
+                                  <span id="remove_history" class="button"><img src="../images/icon_trash.svg"></span>
+                                  <a id="download" href="#" target="_blank" download="historys.json" class="button">
+                                    <img src="../images/icon_folder_download.svg">
+                                  </a>`;
 
   id('remove_history').addEventListener('click', start_remove_process, false);
 
@@ -763,7 +819,7 @@ function create_historys_ticks(historys,ticks) {
 
     var total = 0;
 
-    for(var key in history) key === 'BTC_JPY' ? total += history[key] : total += history[key] * ticks[key];
+    for(var key in history) key === 'BTC_JPY' ? total += history[key] : total += history[key] * ticks[key].last;//new
 
     return total;
 
@@ -771,6 +827,40 @@ function create_historys_ticks(historys,ticks) {
 
 }
 
+//portfolio backup file
+function backup_json() {
+
+  /*
+  最後のポートフォリオは保存しない last portfolio don't save in that it remove loacal stoarage.
+  ストレージを削除する際にポップアップでアラート表示して保存を促す
+  https://developer.mozilla.org/ja/docs/Web/HTML/Element/a#Attributes
+  http://qiita.com/wadahiro/items/eb50ac6bbe2e18cf8813
+  */
+
+  if(get('historys')) {
+
+    var backup = {};
+    var historys = get('historys');
+    var stars = get('stars');
+    var d3 = get('d3');
+
+    backup['historys'] = historys;
+    backup['stars'] = stars;
+    backup['d3'] = d3;
+
+    backup = JSON.stringify(backup);
+
+    var blob = new Blob([backup],{'type': 'application/json'});
+
+    id("download").href = window.URL.createObjectURL(blob);
+
+  }
+
+}
+
+id('download').addEventListener('click', backup_json, false);
+
+/*----------------- classList  ------------------*/
 //modal Cladd
 function Modal(modal,modal_inner,contents) {
 
@@ -784,6 +874,8 @@ function Modal(modal,modal_inner,contents) {
 
   this.modal.classList.add('modal_open');
   //this.modal.style.top = `${window.pageYOffset}px`; //to css file
+  document.body.classList.add('scroll_stop');
+  //document.body.style.top = `${window.pageYOffset}px`;
 
   this.modal_inner.innerHTML = contents;
   this.modal_inner.appendChild(this.submit);
@@ -814,7 +906,7 @@ Modal.to_localStorage = function to_localStorage(e) {
 
     var history = {};
         history['memo'] = id('port_memo').value;
-        history['date'] = new Date(e.timeStamp);
+        history['date'] = Date();
         history['history'] = my_portfolio;
 
         historys.push(history);
@@ -828,6 +920,8 @@ Modal.prototype.close = function close(e) {
 
     this.classList.remove('modal_open');
     this.children[0].innerHTML = '';
+
+    document.body.classList.remove('scroll_stop');
 
   };
 
